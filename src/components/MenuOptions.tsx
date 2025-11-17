@@ -14,17 +14,21 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 interface MenuOptionsProps {
   video_id: string | undefined;
   video_path: string | undefined;
+  videoUrl?: string | null;
+  title?: string;
   parentCallback: (descOn: boolean) => void;
   time: number;
   youtubeID: string | undefined;
 }
 
-const MenuOptions: React.FC<MenuOptionsProps> = ({ 
-  video_id, 
-  video_path, 
-  parentCallback, 
-  time, 
-  youtubeID 
+const MenuOptions: React.FC<MenuOptionsProps> = ({
+  video_id,
+  video_path,
+  videoUrl,
+  title,
+  parentCallback,
+  time,
+  youtubeID
 }) => {
   const [alerttext, setAlerttext] = useState<string>("");
   const [showAlert, setShowAlert] = useState<boolean>(false);
@@ -34,6 +38,8 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
   const [copied, setCopied] = useState<boolean>(false);
   const navigate = useNavigate();
   const token = Cookies.get("jwtToken");
+
+  console.log("MenuOptions video ids and paths", video_id, videoUrl, youtubeID, title);
 
   const handleShareButtonClick = (): void => {
     const url = window.location.href;
@@ -55,14 +61,14 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
   };
 
   const handleEditDescriptions = (): void => {
-    if (!isLoggedIn) {
-      setShowAlert(true);
-      setAlerttext("You need to have an account to edit descriptions");
-    } else {
-      navigate("/EditDescriptions", {
-        state: { video_id: video_id, video_path: video_path, youtubeID: youtubeID },
-      });
-    }
+    // if (!isLoggedIn) {
+    //   setShowAlert(true);
+    //   setAlerttext("You need to have an account to edit descriptions");
+    // } else {
+    navigate("/EditDescriptions", {
+      state: { video_id: video_id, videoUrl: videoUrl, youtubeID: youtubeID, title: title },
+    });
+    // }
   };
 
   const handleViewDescriptions = (): void => {
@@ -86,8 +92,8 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
       sx={{
         backgroundColor: "white",
         borderRadius: 2,
-        overflow: "hidden",
-        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        boxShadow: 3,
+        overflow: "hidden"
       }}
     >
       {showAlert && (
@@ -96,11 +102,11 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
           parentCallback={handleCloseAlertCallback}
         />
       )}
-      
+
       {/* Header */}
       <Box
         sx={{
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          backgroundColor: "primary.main",
           p: 2.5,
           color: "white",
         }}
@@ -125,8 +131,8 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
             textTransform: "none",
             fontSize: "0.95rem",
             fontWeight: 500,
-            background: descOn 
-              ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            background: descOn
+              ? "linear-gradient(135deg, primary.main 0%, #764ba2 100%)"
               : "linear-gradient(135deg, #6B7280 0%, #4B5563 100%)",
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
             transition: "all 0.3s ease",
@@ -141,36 +147,7 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
         </Button>
 
         {/* Ask AI */}
-        <AskAI videoID={video_id} timeStamp={time} />
-
-        {/* Add Description */}
-        <Button
-          variant="outlined"
-          fullWidth
-          startIcon={<AddCircleOutlineIcon />}
-          onClick={handleAddDescriptions}
-          sx={{
-            py: 1.5,
-            px: 2.5,
-            borderRadius: 2,
-            textTransform: "none",
-            fontSize: "0.95rem",
-            fontWeight: 500,
-            borderWidth: 2,
-            borderColor: "#667eea",
-            color: "#667eea",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              borderWidth: 2,
-              borderColor: "#667eea",
-              backgroundColor: "rgba(102, 126, 234, 0.08)",
-              transform: "translateY(-2px)",
-            },
-          }}
-          aria-label="If you want to add your own descriptions, you can do so by clicking on this button"
-        >
-          Add description
-        </Button>
+        <AskAI videoID={video_id} timeStamp={time} videoUrl={videoUrl} />
 
         {/* Edit Descriptions */}
         <Button
@@ -181,18 +158,9 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
           sx={{
             py: 1.5,
             px: 2.5,
-            borderRadius: 2,
             textTransform: "none",
-            fontSize: "0.95rem",
-            fontWeight: 500,
-            borderWidth: 2,
-            borderColor: "#764ba2",
-            color: "#764ba2",
             transition: "all 0.3s ease",
             "&:hover": {
-              borderWidth: 2,
-              borderColor: "#764ba2",
-              backgroundColor: "rgba(118, 75, 162, 0.08)",
               transform: "translateY(-2px)",
             },
           }}
@@ -210,17 +178,12 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
           sx={{
             py: 1.5,
             px: 2.5,
-            borderRadius: 2,
             textTransform: "none",
-            fontSize: "0.95rem",
-            fontWeight: 500,
-            borderWidth: 2,
-            borderColor: copied ? "#10B981" : "#6B7280",
-            color: copied ? "#10B981" : "#6B7280",
+            borderColor: copied ? "#10B981" : "default",
+            color: copied ? "#10B981" : "default",
             transition: "all 0.3s ease",
             "&:hover": {
-              borderWidth: 2,
-              borderColor: copied ? "#10B981" : "#6B7280",
+              borderColor: copied ? "#10B981" : "default",
               backgroundColor: copied ? "rgba(16, 185, 129, 0.08)" : "rgba(107, 114, 128, 0.08)",
               transform: "translateY(-2px)",
             },

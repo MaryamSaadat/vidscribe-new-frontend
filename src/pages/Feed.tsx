@@ -11,7 +11,6 @@ type Video = {
   [key: string]: unknown;
 };
 
-
 type UseVideosResult = {
   videoList: Video[];
   isLoading: boolean;
@@ -20,32 +19,46 @@ type UseVideosResult = {
 };
 
 export default function Feed() {
-  const { videoList, isLoading } =
-    useVideos() as UseVideosResult;
-
+  const { videoList, isLoading } = useVideos() as UseVideosResult;
 
   return (
     <Box sx={{ display: 'flex' }}>
       <SideNav />
       <Box
         component="main"
-        sx={{ width: { sm: `calc(100% - ${drawerWidth}px)` }, height: '100vh' }}
+        sx={{ width: { sm: `calc(1400px - ${drawerWidth}px)` }, height: '100vh' }}
       >
         <Navbar />
-        <Box
-          m={2}
-          sx={{
-            backgroundColor: 'secondary.main',
-            p: '0 10px',
-            display: 'inline-block',
-          }}
-        >
-          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+        <Box m={2}>
+          <Typography 
+            variant="h3" 
+            className="heading-highlighted"
+            tabIndex={0}
+            aria-label="Recently Described Videos section"
+          >
             Recently Described Videos
           </Typography>
         </Box>
 
-        {isLoading ? <div>Loading...</div> : <Videos videos={videoList} />}
+        {isLoading ? (
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              minHeight: '200px' 
+            }}
+            role="status"
+            aria-live="polite"
+            aria-label="Loading videos"
+          >
+            <Typography variant="h6" color="text.secondary">
+              Loading...
+            </Typography>
+          </Box>
+        ) : (
+          <Videos videos={videoList} />
+        )}
       </Box>
     </Box>
   );

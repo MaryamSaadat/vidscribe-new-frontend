@@ -46,7 +46,7 @@ const DisplayDescriptions: React.FC<DisplayDescriptionsProps> = ({
           gap: 1
         }}
       >
-        <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+        <Typography variant="subtitle1" sx={{ color: "white", fontWeight: 600 }}>
           Audio Description
         </Typography>
         {/* <Chip

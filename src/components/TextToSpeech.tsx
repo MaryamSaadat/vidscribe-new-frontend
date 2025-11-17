@@ -105,7 +105,7 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({
 
   return (
     <Box>
-      <FormControl fullWidth size="small" sx={{ mb: 2.5 }}>
+      {/* <FormControl fullWidth size="small" sx={{ mb: 2.5 }}>
         <InputLabel id="voice-select-label">Voice</InputLabel>
         <Select
           labelId="voice-select-label"
@@ -120,7 +120,7 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({
             </MenuItem>
           ))}
         </Select>
-      </FormControl>
+      </FormControl> */}
 
       <Stack
         spacing={4}

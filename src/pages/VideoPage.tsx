@@ -182,7 +182,6 @@ const VideoPage: React.FC = () => {
                 component="main"
                 sx={{
                     flexGrow: 1,
-                    p: 2,
                     width: { sm: `calc(100% - ${DRAWERWIDTH}px)` },
                 }}
             >
@@ -221,10 +220,11 @@ const VideoPage: React.FC = () => {
                                 )}
                             </>
                         </Grid>
-                        <Grid size={{ xs: 12, md: 4 }}>
+                        <Grid size={{ xs: 12, md: 4 }} mt={2}>
                             <MenuOptions
                                 video_id={video_id}
                                 videoUrl={video.video_presigned_url}
+                                title={video.title}
                                 videoDescriptions={undefined}
                                 parentCallback={handleViewDescriptions}
                                 time={played}

@@ -20,7 +20,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.3.8",
-    "react-router-dom": "^7.9.5"
+    "react-router-dom": "^7.9.5",
+    "react-speech-recognition": "^4.0.1"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.5.0",

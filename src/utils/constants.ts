@@ -6,6 +6,7 @@ import type { ElementType } from 'react';
 
 import maryamImage from './images/maryam.jpeg';
 import sinaImage from './images/sina.jpeg';
+import samImage from './images/sam.jpg';
 
 // Logo path
 export const logo = './viLogo.png' as const;
@@ -24,6 +25,7 @@ export const GET_VIDEOS: string = getEnvVar('VITE_GET_VIDEOS');
 export const GET_VIDEO_DESCRIPTIONS: string = getEnvVar('VITE_GET_DECRIPTIONS');
 export const GENERATE_URL: string = getEnvVar('VITE_GENERATE_URL');
 export const PROCESS_FILE_URL: string = getEnvVar('VITE_PROCESS_FILE_URL');
+export const DESCRIPTIONS_EDIT_API: string = getEnvVar('VITE_DESCRIPTIONS_EDIT_API');
 
 // Format duration helper with explicit return type
 export const formatDuration = (secondsFloat: number): string => {
@@ -55,11 +57,17 @@ export type Person = {
   readonly site?: string;
 };
 
+export const contributors = [
+    'Sejal Jain', 'Nimeesh Milind Mahajan', 'Kerry Zhuo', 'Anuj Nathan Kamasamudram',
+    'Saanvi Agrawal', 'Adam Colyar', 'Yasmine Muraweh', 'Asish Panda',
+    'Andrew Mitchell'
+];
+
 // Immutable arrays with as const assertion
 export const categories: readonly Category[] = [
   { name: 'Home', icon: HomeIcon, href: '/' },
-  { name: 'Upload', icon: FileUploadIcon, href: '/UploadVideo' },
-  { name: 'Use URL', icon: YouTubeIcon, href: '/UploadUrl' },
+  { name: 'Upload Video', icon: FileUploadIcon, href: '/UploadVideo' },
+  { name: 'Youtube Video', icon: YouTubeIcon, href: '/UploadUrl' },
   { name: 'About ViDScribe', icon: YouTubeIcon, href: '/AboutPage' },
 ] as const;
 
@@ -68,13 +76,20 @@ export const people: readonly Person[] = [
     image: maryamImage,
     name: 'Maryam S Cheema',
     info: 'Arizona State University',
+    site:'https://maryamsaadat.github.io/',
     zoom: false,
   },
   {
     image: sinaImage,
     name: 'Sina Elahimanesh',
-    info: 'Arizona State University',
+    info: 'Saarland University',
+    site:'https://www.sina-elahimanesh.com/',
     zoom: true,
+  },
+    {
+    image: samImage,
+    name: 'Samuel Martin',
+    info: 'Arizona State University',
   },
   {
     image:

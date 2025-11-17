@@ -27,6 +27,7 @@ const Videos: React.FC<VideosProps> = ({ videos }) => {
       justifyContent="start"
       alignItems="start"
       columnGap={2}
+      gap={2}
       m={2}
     >
       {reversedVideos.map((item: Video, idx: number) => (

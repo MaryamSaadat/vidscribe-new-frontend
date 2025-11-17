@@ -96,17 +96,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 <source src={video} type="video/mp4" />
                 Your browser does not support the video tag.
             </video>)}
-            {yesDesc && (
-                <Grid mt={2}>
-                    <Typography className="styled-heading">{title}</Typography>
-                    <DisplayDescriptions
-                        description={currentDescription}
-                        parentCallback={handleCallback}
-                        cIndex={currentDescriptionIndex}
-                        pIndex={prevDescriptionIndex}
-                    />
-                </Grid>
-            )}
+            <Grid mt={2}>
+                <Typography className="heading-highlighted" mb={2}>{title}</Typography>
+                {yesDesc && (<DisplayDescriptions
+                    description={currentDescription}
+                    parentCallback={handleCallback}
+                    cIndex={currentDescriptionIndex}
+                    pIndex={prevDescriptionIndex}
+                />)}
+            </Grid>
         </div>
     );
 };
