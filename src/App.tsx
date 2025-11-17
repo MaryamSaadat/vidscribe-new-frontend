@@ -1,39 +1,36 @@
 import { useEffect, useState } from "react";
+import { useAuthenticator } from '@aws-amplify/ui-react';
 import type { Schema } from "../amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
+import { ThemeProvider, CssBaseline } from '@mui/material';        // ok for CssBaseline
+import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles'; // provider here
+import { theme } from './theme';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Feed from './pages/Feed';
+import AboutPage from './pages/AboutPage';
+import UploadVideo from "./pages/UploadVideo";
+import VideoPage from "./pages/VideoPage";
+import { VideoProvider } from "./context/videoContext";
+
 
 const client = generateClient<Schema>();
 
 function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
-
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
-
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
-  }
 
   return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-          Review next step of this tutorial.
-        </a>
-      </div>
-    </main>
+    <MUIThemeProvider theme={theme}>
+      <VideoProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Feed />} />
+            <Route path="/AboutPage" element={<AboutPage />} />
+            <Route path="/UploadVideo" element={<UploadVideo />} />
+            <Route path="/VideoPage/:video_id" element={<VideoPage />} />
+          </Routes>
+        </BrowserRouter>
+      </VideoProvider>
+    </MUIThemeProvider>
   );
 }
 
