@@ -4,7 +4,7 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
-import Stack from '@mui/material/Stack';
+
 import { 
   Language as WebsiteIcon,
   Email as EmailIcon,
