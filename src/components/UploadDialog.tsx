@@ -93,7 +93,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
             <FormControlLabel 
               value="none" 
               control={<Radio inputProps={{ 'aria-label': 'Proceed without customizations' }} />} 
-              label="Use default settings (recommended)" 
+              label="Use default settings for audio descriptions" 
             />
             <FormControlLabel 
               value="custom" 
@@ -128,9 +128,9 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
                 max={100}
                 step={5}
                 marks={[
-                  { value: 15, label: '15 words' },
+                  { value: 15, label: '15' },
                   { value: 50, label: '50 words' },
-                  { value: 100, label: '100 words' }
+                  { value: 100, label: '100' }
                 ]}
                 valueLabelDisplay="auto"
                 aria-labelledby="length-slider-label"
@@ -141,7 +141,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
               </Typography>
             </FormControl>
 
-            <Divider sx={{ my: 3 }} />
+            <Divider sx={{ my: 3 }}/>
 
             {/* Emphasis Options */}
             <FormControl component="fieldset" fullWidth sx={{ mb: 4 }}>

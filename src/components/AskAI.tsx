@@ -10,25 +10,28 @@ import KeyboardVoiceIcon from "@mui/icons-material/KeyboardVoice";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import beepStart from "../assets/beepStart.mp3";
 import beepStop from "../assets/beepStop.mp3";
+import { ASK_AI_API } from "../utils/constants";
 
 interface AskAIProps {
-  videoID: string | number;
-  timeStamp: number; 
+  videoID: number | undefined;
+  timeStamp: number;
   videoUrl?: string | null; //  S3 presigned URL
   videoAD?: string | null; // optional audio description
+  username?: string | null;
   screenshotCount?: number; // default 5
   screenshotIntervalSec?: number; // spacing in seconds between screenshots (default 1)
 }
 
 const AUTO_STOP_MS = 3000;
 const SCREENSHOT_WIDTH = 640;
-const LAMBDA_API_URL = "https://rhoeszjsouxvlq5bdbd6rhvbpm0vdzwx.lambda-url.us-east-2.on.aws/"; // <- update
+const LAMBDA_API_URL = ASK_AI_API;
 
 export default function AskAI({
   videoID,
   timeStamp,
   videoUrl,
-  videoAD = null,
+  videoAD,
+  username,
   screenshotCount = 5,
   screenshotIntervalSec = 1,
 }: AskAIProps) {
@@ -39,6 +42,8 @@ export default function AskAI({
   const [response, setResponse] = useState<string>("");
   const [alertText, setAlertText] = useState("");
   const [showAlert, setShowAlert] = useState(false);
+
+  // console.log("AskAI props:", { videoID, timeStamp, videoUrl, videoAD, screenshotCount, screenshotIntervalSec });
 
   // preview state
   const [capturedPreviewImages, setCapturedPreviewImages] = useState<string[]>([]); // data:image/png;base64,...
@@ -63,7 +68,7 @@ export default function AskAI({
 
   const playBeep = (type: "start" | "stop") => {
     const audio = new Audio(type === "start" ? beepStart : beepStop);
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
   };
 
   const clearInactivityTimer = () => {
@@ -92,7 +97,7 @@ export default function AskAI({
     playBeep("start");
     clearInactivityTimer();
     inactivityTimerRef.current = window.setTimeout(() => stopListening(), AUTO_STOP_MS);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [browserSupportsSpeechRecognition]);
 
   const stopListening = useCallback(() => {
@@ -103,21 +108,21 @@ export default function AskAI({
   }, []);
 
   useEffect(() => {
-  const handler = (ev: KeyboardEvent) => {
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    const cmdKey = isMac ? ev.metaKey : ev.ctrlKey;
+    const handler = (ev: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const cmdKey = isMac ? ev.metaKey : ev.ctrlKey;
 
-    // Open AskAI dialog
-    if (cmdKey && ev.key.toLowerCase() === 'q') {
-      setOpen(true);
-      startListening();
-    }
+      // Open AskAI dialog
+      if (cmdKey && ev.key.toLowerCase() === 'q') {
+        setOpen(true);
+        startListening();
+      }
 
-    // Capture screenshots / trigger question submission
-    if (cmdKey && ev.key.toLowerCase() === 's' && open) {
-      handleQuestion();
-    }
-  };
+      // Capture screenshots / trigger question submission
+      if (cmdKey && ev.key.toLowerCase() === 's' && open) {
+        handleQuestion();
+      }
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open, isListening, startListening, stopListening]);
@@ -151,7 +156,7 @@ export default function AskAI({
       setTimeout(() => { if (video.readyState >= 1) { cleanup(); resolve(); } }, 1500);
     });
 
-    const aspect = video.videoWidth && video.videoHeight ? (video.videoWidth / video.videoHeight) : (16/9);
+    const aspect = video.videoWidth && video.videoHeight ? (video.videoWidth / video.videoHeight) : (16 / 9);
     const canvas = document.createElement("canvas");
     canvas.width = SCREENSHOT_WIDTH;
     canvas.height = Math.round(SCREENSHOT_WIDTH / aspect);
@@ -232,53 +237,56 @@ export default function AskAI({
 
   // send to Lambda: JSON with either videoS3Key OR youtube_url, timestamps, screenshots (base64), question, video_ad
   const handleQuestion = async () => {
-  setLoading(true);
-  try {
-    // 1) Prepare screenshots from video (client-side)
-    const { base64s, timestamps } = await prepareScreenshots();
+    setLoading(true);
+    try {
+      // 1) Prepare screenshots from video (client-side)
+      const { base64s, timestamps } = await prepareScreenshots();
 
-    // 2) Build payload for Lambda
-    const payload: any = {
-      video_id: String(videoID),
-      question: editableTranscript,
-      timestamps,            // optional, used by backend for reference
-      screenshots_base64: base64s, // plain base64 array
-    };
+      // 2) Build payload for Lambda
+      const payload: any = {
+        video_id: String(videoID),
+        username: username || "anonymous",
+        timestamp: timeStamp,
+        question: editableTranscript,
+        video_ad: videoAD || undefined,
+        timestamps,
+        screenshots_base64: base64s,
+      };
 
-    // optional extra context
-    if (videoAD) payload.video_ad = videoAD;
-    if (videoUrl) payload.youtube_url = videoUrl;
+      // optional extra context
+      if (videoAD) payload.video_ad = videoAD;
+      if (videoUrl) payload.youtube_url = videoUrl;
 
-    // 3) Send to Lambda
-    const resp = await axios.post(LAMBDA_API_URL, payload, { timeout: 120000 });
-    const data = resp.data;
+      // 3) Send to Lambda
+      const resp = await axios.post(LAMBDA_API_URL, payload);
+      const data = resp.data;
 
-    // 4) Set Gemini response
-    if (data?.gemini_response) {
-      setResponse(
-        typeof data.gemini_response === "string"
-          ? data.gemini_response
-          : JSON.stringify(data.gemini_response, null, 2)
-      );
+      // 4) Set Gemini response
+      if (data?.gemini_response) {
+        setResponse(
+          typeof data.gemini_response === "string"
+            ? data.gemini_response
+            : JSON.stringify(data.gemini_response, null, 2)
+        );
+      }
+
+      // 5) Preview screenshots returned (optional)
+      if (Array.isArray(data?.screenshots) && data.screenshots.length > 0) {
+        setCapturedPreviewImages(
+          data.screenshots.map((s: any, idx: number) =>
+            s.url || `data:image/png;base64,${base64s[idx] || ""}`
+          )
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      setShowAlert(true);
+      setAlertText("Failed to send question. See console.");
+    } finally {
+      setLoading(false);
+      stopListening();
     }
-
-    // 5) Preview screenshots returned (optional)
-    if (Array.isArray(data?.screenshots) && data.screenshots.length > 0) {
-      setCapturedPreviewImages(
-        data.screenshots.map((s: any, idx: number) =>
-          s.url || `data:image/png;base64,${base64s[idx] || ""}`
-        )
-      );
-    }
-  } catch (err) {
-    console.error(err);
-    setShowAlert(true);
-    setAlertText("Failed to send question. See console.");
-  } finally {
-    setLoading(false);
-    stopListening();
-  }
-};
+  };
 
   return (
     <>

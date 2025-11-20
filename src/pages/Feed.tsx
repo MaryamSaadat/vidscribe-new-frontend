@@ -26,7 +26,7 @@ export default function Feed() {
       <SideNav />
       <Box
         component="main"
-        sx={{ width: { sm: `calc(1400px - ${drawerWidth}px)` }, height: '100vh' }}
+        sx={{ width: { sm: `calc(100% - ${drawerWidth}px)` }, height: '100vh' }}
       >
         <Navbar />
         <Box m={2}>

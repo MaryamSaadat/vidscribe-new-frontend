@@ -141,7 +141,7 @@ export const deleteDescription = async (
 ): Promise<void> => {
     try {
         // Use the full AWS API Gateway URL for delete
-        const deleteUrl = `${DESCRIPTIONS_EDIT_API}/${descriptionId}`;
+        const deleteUrl = `${GET_VIDEO_DESCRIPTIONS}/${descriptionId}`;
         await axios.delete(deleteUrl);
     } catch (error) {
         console.error('Error deleting description:', error);

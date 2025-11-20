@@ -225,7 +225,7 @@ const VideoPage: React.FC = () => {
                                 video_id={video_id}
                                 videoUrl={video.video_presigned_url}
                                 title={video.title}
-                                videoDescriptions={undefined}
+                                videoDescriptions={descUser}
                                 parentCallback={handleViewDescriptions}
                                 time={played}
                                 youtubeID={video.url}

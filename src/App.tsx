@@ -68,7 +68,7 @@ function App() {
 
   return (
     <MUIThemeProvider theme={theme}>
-      <Box className="pattern">
+      <Box className="pattern" sx={{ minHeight: '100vh' }}>
         <VideoProvider>
           <BrowserRouter>
             <Authenticator components={components} theme={amplifyTheme}>

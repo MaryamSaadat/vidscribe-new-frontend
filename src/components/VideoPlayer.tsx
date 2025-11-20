@@ -10,6 +10,7 @@ interface Description {
 }
 
 interface VideoPlayerProps {
+    videoID ?: number;
     yesDesc: boolean;
     videoUrl: string;
     title: string;
@@ -26,7 +27,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
     const video = videoUrl;
 
-    console.log("my video url", videoUrl)
+    // console.log("my video url", videoUrl)
 
     const defaultDescription: Description = {
         text_history: ["No description playing"],

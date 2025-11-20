@@ -10,15 +10,17 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import EditIcon from "@mui/icons-material/Edit";
 import ShareIcon from "@mui/icons-material/Share";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useAuthenticator } from '@aws-amplify/ui-react';
 
 interface MenuOptionsProps {
-  video_id: string | undefined;
+  video_id: number | undefined;
   video_path: string | undefined;
   videoUrl?: string | null;
   title?: string;
   parentCallback: (descOn: boolean) => void;
   time: number;
   youtubeID: string | undefined;
+  videoDescriptions?: any;
 }
 
 const MenuOptions: React.FC<MenuOptionsProps> = ({
@@ -28,7 +30,8 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
   title,
   parentCallback,
   time,
-  youtubeID
+  youtubeID,
+  videoDescriptions,
 }) => {
   const [alerttext, setAlerttext] = useState<string>("");
   const [showAlert, setShowAlert] = useState<boolean>(false);
@@ -37,9 +40,10 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
   const [descOn, setDescOn] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const navigate = useNavigate();
+  const { user } = useAuthenticator();
   const token = Cookies.get("jwtToken");
 
-  console.log("MenuOptions video ids and paths", video_id, videoUrl, youtubeID, title);
+  // console.log("MenuOptions video ids and paths", video_id, videoUrl, youtubeID, title);
 
   const handleShareButtonClick = (): void => {
     const url = window.location.href;
@@ -147,7 +151,7 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
         </Button>
 
         {/* Ask AI */}
-        <AskAI videoID={video_id} timeStamp={time} videoUrl={videoUrl} />
+        <AskAI videoID={video_id} timeStamp={time} videoUrl={videoUrl} videoAD={videoDescriptions} username={user.signInDetails?.loginId}/>
 
         {/* Edit Descriptions */}
         <Button

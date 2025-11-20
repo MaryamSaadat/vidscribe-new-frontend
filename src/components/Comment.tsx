@@ -22,8 +22,7 @@ interface QuestionsResponse {
 }
 
 const Comment: React.FC<CommentProps> = ({ videoID }) => {
-  const apiUrl = "https://vidscribe.org/b/api/ask_question/";
-  const token = Cookies.get("jwtToken");
+  const apiUrl = `https://hbasfrum76.execute-api.us-east-2.amazonaws.com/default/VidScribeQuestionAnswering/${videoID}`;
   const [comments, setComments] = useState<CommentData[]>([]);
   const [isLoading, setLoading] = useState<boolean>(true);
   const [noComments, setNoComments] = useState<boolean>(false);
@@ -34,11 +33,10 @@ const Comment: React.FC<CommentProps> = ({ videoID }) => {
     };
 
     axios
-      .get<QuestionsResponse>(apiUrl, {
-        params: params,
-      })
+      .get<QuestionsResponse>(apiUrl)
       .then((response) => {
         // checking if the api call is returning NOT_Found or an array
+        console.log("API response for comments:", response.data);
         if (!Array.isArray(response.data.questions)) {
           setNoComments(true);
         } else {
