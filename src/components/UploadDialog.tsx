@@ -25,6 +25,8 @@ interface CustomizationSettings {
   mode: 'none' | 'custom';
   length?: number;
   emphasis?: 'character' | 'environment' | 'general' | 'instructional';
+  subjectiveness?: 'objective' | 'subjective';
+  colorPreference?: 'include' | 'exclude';
   personalGuidelines?: string;
 }
 
@@ -32,6 +34,8 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
   const [mode, setMode] = React.useState<'none' | 'custom'>('none');
   const [length, setLength] = React.useState<number>(50);
   const [emphasis, setEmphasis] = React.useState<string>('general');
+  const [subjectiveness, setSubjectiveness] = React.useState<string>('objective');
+  const [colorPreference, setColorPreference] = React.useState<string>('include');
   const [personalGuidelines, setPersonalGuidelines] = React.useState<string>('');
 
   const handleClose = (): void => {
@@ -43,6 +47,8 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
     setMode('none');
     setLength(50);
     setEmphasis('general');
+    setSubjectiveness('objective');
+    setColorPreference('include');
     setPersonalGuidelines('');
   };
 
@@ -52,7 +58,9 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
       ...(mode === 'custom' && { 
         length, 
         emphasis: emphasis as CustomizationSettings['emphasis'],
-        personalGuidelines: personalGuidelines.trim() || undefined
+        subjectiveness: subjectiveness as CustomizationSettings['subjectiveness'],
+        colorPreference: colorPreference as CustomizationSettings['colorPreference'],
+        personalGuidelines: personalGuidelines || undefined
       })
     };
     onConfirm(settings);
@@ -213,6 +221,98 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
 
             <Divider sx={{ my: 3 }} />
 
+            {/* Subjectiveness Options */}
+            <FormControl component="fieldset" fullWidth sx={{ mb: 4 }}>
+              <FormLabel 
+                component="legend" 
+                sx={{ mb: 2, fontWeight: 500 }}
+                id="subjectiveness-options-label"
+              >
+                Description Style
+              </FormLabel>
+              <RadioGroup 
+                value={subjectiveness} 
+                onChange={(e) => setSubjectiveness(e.target.value)}
+                aria-labelledby="subjectiveness-options-label"
+              >
+                <FormControlLabel 
+                  value="objective" 
+                  control={<Radio inputProps={{ 'aria-label': 'Objective style - Factual descriptions only' }} />} 
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>Objective</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Factual, neutral descriptions without interpretation or emotion
+                      </Typography>
+                    </Box>
+                  }
+                />
+                <FormControlLabel 
+                  value="subjective" 
+                  control={<Radio inputProps={{ 'aria-label': 'Subjective style - Interpretive descriptions with mood and atmosphere' }} />} 
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>Subjective</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Interpretive descriptions including mood, atmosphere, and emotional context
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </RadioGroup>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                Choose whether descriptions should be purely factual or include interpretive elements
+              </Typography>
+            </FormControl>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Color Preference Options */}
+            <FormControl component="fieldset" fullWidth sx={{ mb: 4 }}>
+              <FormLabel 
+                component="legend" 
+                sx={{ mb: 2, fontWeight: 500 }}
+                id="color-preference-label"
+              >
+                Color Descriptions
+              </FormLabel>
+              <RadioGroup 
+                value={colorPreference} 
+                onChange={(e) => setColorPreference(e.target.value)}
+                aria-labelledby="color-preference-label"
+              >
+                <FormControlLabel 
+                  value="include" 
+                  control={<Radio inputProps={{ 'aria-label': 'Include color descriptions - Describe colors of objects, clothing, and scenes' }} />} 
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>Include Colors</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Describe colors of objects, clothing, environments, and visual elements
+                      </Typography>
+                    </Box>
+                  }
+                />
+                <FormControlLabel 
+                  value="exclude" 
+                  control={<Radio inputProps={{ 'aria-label': 'Exclude color descriptions - Focus on shapes, textures, and spatial information' }} />} 
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>Exclude Colors</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Omit color information and focus on shapes, textures, and spatial relationships
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </RadioGroup>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                Choose whether color information should be included in audio descriptions
+              </Typography>
+            </FormControl>
+
+            <Divider sx={{ my: 3 }} />
+
             {/* Personal Guidelines */}
             <FormControl fullWidth>
               <FormLabel 
@@ -226,7 +326,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
                 fullWidth
                 multiline
                 rows={4}
-                placeholder="Enter any specific preferences or instructions for audio description generation... (e.g., 'Avoid technical jargon', 'Focus on emotional tone', 'Include color descriptions')"
+                placeholder="Enter any specific preferences or instructions for audio description generation... (e.g., 'Avoid technical jargon', 'Focus on emotional tone', 'Use specific terminology')"
                 value={personalGuidelines}
                 onChange={(e) => setPersonalGuidelines(e.target.value)}
                 variant="outlined"

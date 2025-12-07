@@ -231,23 +231,28 @@ const VideoPage: React.FC = () => {
                                 youtubeID={video.url}
                             />
                             <Box
-                                mt={2}
-                                p={2}
                                 sx={{
                                     backgroundColor: "white",
-                                    paddingBottom: "20px",
+                                    mt: 2,
+                                    borderRadius: 2,
+                                    boxShadow: 3,
+                                    overflow: "hidden"
                                 }}
-                                boxShadow={3}
                             >
-                                <Typography
-                                    variant="h6"
-                                    sx={{ color: "primary.dark" }}
-                                    marginBottom={1}
+                                {/* Header */}
+                                <Box
+                                    sx={{
+                                        backgroundColor: "primary.main",
+                                        p: 2.5,
+                                        color: "white",
+                                    }}
                                 >
-                                    Q&A
-                                </Typography>
+                                    <Typography variant="body1" fontWeight={600} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        Visual Q&A
+                                    </Typography>
+                                </Box>
                                 <Divider />
-                                <Box sx={{ overflow: "scroll", height: "350px" }} mt={1}>
+                                <Box sx={{ overflow: "scroll", height: "350px" }} p={1}>
                                     <Comment videoID={video_id} />
                                 </Box>
                             </Box>

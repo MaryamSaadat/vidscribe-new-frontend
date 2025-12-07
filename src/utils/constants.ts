@@ -27,6 +27,7 @@ export const GENERATE_URL: string = getEnvVar('VITE_GENERATE_URL');
 export const PROCESS_FILE_URL: string = getEnvVar('VITE_PROCESS_FILE_URL');
 export const DESCRIPTIONS_EDIT_API: string = getEnvVar('VITE_DESCRIPTIONS_EDIT_API');
 export const ASK_AI_API: string = getEnvVar('VITE_ASK_QUESTION_API');
+export const PROCESS_YOUTUBE_FILE_URL: string = getEnvVar('VITE_PROCESS_YOUTUBE_VIDEO');
 
 // Format duration helper with explicit return type
 export const formatDuration = (secondsFloat: number): string => {

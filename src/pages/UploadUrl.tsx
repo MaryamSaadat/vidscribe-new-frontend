@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SideNav from '../components/SideNav'
 import AlertBar from "../components/AlertBar";
@@ -16,18 +16,18 @@ import {
 import {
   CloudUpload as CloudUploadIcon,
   VideoLibrary as VideoLibraryIcon,
-  CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
 import axios from "axios";
-import Cookies from "js-cookie";
+import { DRAWERWIDTH, PROCESS_YOUTUBE_FILE_URL } from "../utils/constants";
 import UploadDialog from "../components/UploadDialog";
-
-const drawerWidth = 200;
+import { useAuthenticator } from '@aws-amplify/ui-react';
 
 interface CustomizationSettings {
-  mode: 'none' | 'default' | 'personal';
+  mode: 'none' | 'custom';
   length?: number;
   emphasis?: 'character' | 'environment' | 'general' | 'instructional';
+  subjectiveness?: 'objective' | 'subjective';
+  colorPreference?: 'include' | 'exclude';
   personalGuidelines?: string;
 }
 
@@ -41,8 +41,29 @@ const UploadURL: React.FC = () => {
   const [visibility, setVisibility] = useState<string>("public");
   const [alertOpen, setAlertOpen] = useState<boolean>(false);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const { user } = useAuthenticator();
 
   const navigate = useNavigate();
+
+  // Speech synthesis function
+  const speak = (text: string): void => {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Cleanup speech on unmount
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
 
   const handleCloseAlertCallback = (): void => {
     setAlertOpen(false);
@@ -54,22 +75,16 @@ const UploadURL: React.FC = () => {
   };
 
   const handleSubmitClick = (): void => {
-    const token = Cookies.get("jwtToken");
-
-    if (!token) {
-      setAlertOpen(true);
-      return;
-    }
-
     setDialogOpen(true);
   };
 
   const handleURLUpload = (customizations?: CustomizationSettings): void => {
-    const apiUrl = "https://vidscribe.org/b/api/youtube_video/";
+    const apiUrl = PROCESS_YOUTUBE_FILE_URL;
 
     const postData = {
       youtube_url: url,
-      public_or_private: visibility,
+      is_public: visibility,
+      username: user.signInDetails?.loginId,
       customizations: customizations,
     };
 
@@ -78,33 +93,56 @@ const UploadURL: React.FC = () => {
       "Generating audio descriptions... This may take a few moments. Please don't refresh the page."
     );
     setLoading(true);
+    
+    // Announce processing started
+    speak("Video processing started. Generating audio descriptions. This may take a few moments. Please don't refresh the page.");
 
     axios
       .post(apiUrl, postData)
       .then((response) => {
         console.log("Response:", response.data);
-        navigate("/");
+        
+        // Extract video_id from response body
+        const responseBody = typeof response.data === 'string' 
+          ? JSON.parse(response.data) 
+          : response.data;
+        
+        const videoId = responseBody.video_id;
+        
+        if (videoId) {
+          // Announce success
+          speak("Video processing completed successfully. Navigating to video page.");
+          // Navigate to video page with the video ID
+          navigate(`/VideoPage/${videoId}`);
+        } else {
+          console.error("No video_id in response");
+          speak("Video processed but no video ID was returned. Navigating to home page.");
+          navigate("/");
+        }
       })
       .catch((error) => {
         console.error("Error:", error);
         setLoading(false);
         setHeading("Something Went Wrong");
         setSmallHeading("Please check your URL and try again. Make sure it's a valid YouTube link.");
+        
+        // Announce error
+        speak("An error occurred while processing your video. Please check your URL and try again. Make sure it's a valid YouTube link.");
       });
   };
 
   return (
-    <Box sx={{ minHeight: "100vh" }}>
+    <Box sx={{ display: 'flex' }}>
       <SideNav />
       <Box
         component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+        sx={{ 
+          flexGrow: 1, 
+          p: 4,
+          width: { sm: `calc(100% - ${DRAWERWIDTH}px)` },
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
         }}
       >
         {alertOpen && (
@@ -114,149 +152,192 @@ const UploadURL: React.FC = () => {
           />
         )}
 
-        <Container maxWidth="md">
-          <Fade in timeout={800}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: { xs: 3, md: 6 },
-                borderRadius: 4,
-                background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
-                border: "1px solid #e0e0e0",
-              }}
-            >
-              {/* Icon and Header */}
-              <Stack spacing={3} alignItems="center" sx={{ mb: 4 }}>
-                <Box
+        <Fade in timeout={800}>
+          <Paper
+            elevation={3}
+            sx={{
+              width: '100%',
+              maxWidth: 700,
+              p: 4,
+              borderRadius: 2,
+            }}
+            role="region"
+            aria-label="YouTube video upload form"
+          >
+            {/* Icon and Header */}
+            <Stack spacing={3} alignItems="center" sx={{ mb: 4 }}>
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: loading ? "#e3f2fd" : "#f3e5f5",
+                  transition: "all 0.3s ease",
+                }}
+                role="img"
+                aria-label={loading ? "Processing video" : "Video library icon"}
+              >
+                {loading ? (
+                  <CircularProgress 
+                    size={40} 
+                    aria-label="Loading, please wait"
+                  />
+                ) : (
+                  <VideoLibraryIcon 
+                    sx={{ fontSize: 40, color: "primary.main" }}
+                    aria-hidden="true"
+                  />
+                )}
+              </Box>
+
+              <Box textAlign="center">
+                <Typography
+                  variant="h4"
+                  component="h1"
                   sx={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    bgcolor: loading ? "#e3f2fd" : "#f3e5f5",
-                    transition: "all 0.3s ease",
+                    fontWeight: 700,
+                    color: "primary.dark",
+                    mb: 1,
                   }}
+                  aria-live="polite"
+                  aria-atomic="true"
                 >
-                  {loading ? (
-                    <CircularProgress size={40} />
-                  ) : (
-                    <VideoLibraryIcon sx={{ fontSize: 40, color: "primary.main" }} />
-                  )}
-                </Box>
-
-                <Box textAlign="center">
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontWeight: 700,
-                      color: "primary.dark",
-                      mb: 1,
-                    }}
-                  >
-                    {heading}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: "text.secondary",
-                      maxWidth: 500,
-                      mx: "auto",
-                    }}
-                  >
-                    {smallHeading}
-                  </Typography>
-                </Box>
-              </Stack>
-
-              {/* Input Section */}
-              {!loading && (
-                <Fade in timeout={600}>
-                  <Stack spacing={3}>
-                    <TextField
-                      label="YouTube URL"
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      onChange={handleChange}
-                      value={url}
-                      fullWidth
-                      variant="outlined"
-                    />
-
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      size="large"
-                      fullWidth
-                      disabled={loading || url.trim() === ""}
-                      onClick={handleSubmitClick}
-                      startIcon={<CloudUploadIcon />}
-                      sx={{
-                        py: 1.5,
-                        borderRadius: 2,
-                        fontSize: "1rem",
-                        fontWeight: 600,
-                        textTransform: "none",
-                        boxShadow: 2,
-                        "&:hover": {
-                          boxShadow: 4,
-                          transform: "translateY(-2px)",
-                        },
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      Generate Descriptions
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
-
-              {/* Loading State */}
-              {loading && (
-                <Fade in timeout={600}>
-                  <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
-                    <CircularProgress size={60} thickness={4} />
-                    <Typography variant="body2" color="text.secondary">
-                      This usually takes 30-60 seconds...
-                    </Typography>
-                  </Stack>
-                </Fade>
-              )}
-
-              {/* Info Cards */}
-              {!loading && (
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={2}
-                  sx={{ mt: 4, pt: 4, borderTop: "1px solid #e0e0e0" }}
+                  {heading}
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "text.secondary",
+                    maxWidth: 500,
+                    mx: "auto",
+                  }}
+                  aria-live="polite"
+                  aria-atomic="true"
                 >
-                  {[
-                    { icon: "🎬", text: "Paste any YouTube URL" },
-                    { icon: "🤖", text: "AI generates descriptions" },
-                  ].map((item, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        flex: 1,
-                        textAlign: "center",
-                        p: 2,
-                        borderRadius: 2,
-                        bgcolor: "rgba(0,0,0,0.02)",
-                      }}
-                    >
-                      <Typography variant="h5" sx={{ mb: 0.5 }}>
-                        {item.icon}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {item.text}
-                      </Typography>
-                    </Box>
-                  ))}
+                  {smallHeading}
+                </Typography>
+              </Box>
+            </Stack>
+
+            {/* Input Section */}
+            {!loading && (
+              <Fade in timeout={600}>
+                <Stack spacing={3} component="form" onSubmit={(e) => { e.preventDefault(); handleSubmitClick(); }}>
+                  <TextField
+                    label="YouTube URL"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    onChange={handleChange}
+                    value={url}
+                    fullWidth
+                    variant="outlined"
+                    inputProps={{
+                      'aria-label': 'YouTube URL',
+                      'aria-required': 'true',
+                      'aria-invalid': url.trim() !== "" && !url.includes('youtube.com') && !url.includes('youtu.be'),
+                    }}
+                    helperText="Enter the full URL of the YouTube video you want to add audio descriptions to"
+                  />
+
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    fullWidth
+                    disabled={loading || url.trim() === ""}
+                    onClick={handleSubmitClick}
+                    startIcon={<CloudUploadIcon aria-hidden="true" />}
+                    sx={{
+                      py: 1.5,
+                      borderRadius: 2,
+                      fontSize: "1rem",
+                      fontWeight: 600,
+                      textTransform: "none",
+                      boxShadow: 2,
+                      "&:hover": {
+                        boxShadow: 4,
+                        transform: "translateY(-2px)",
+                      },
+                      transition: "all 0.2s ease",
+                    }}
+                    aria-label={url.trim() === "" ? "Enter a YouTube URL to enable video processing" : "Generate audio descriptions for the YouTube video"}
+                  >
+                    Generate Descriptions
+                  </Button>
                 </Stack>
-              )}
-            </Paper>
-          </Fade>
-        </Container>
+              </Fade>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+              <Fade in timeout={600}>
+                <Stack 
+                  spacing={2} 
+                  alignItems="center" 
+                  sx={{ py: 4 }}
+                  role="status"
+                  aria-live="polite"
+                  aria-busy="true"
+                >
+                  {/* <CircularProgress 
+                    size={60} 
+                    thickness={4}
+                    aria-label="Processing video, please wait"
+                  /> */}
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    aria-live="polite"
+                  >
+                    This usually takes 30-60 seconds...
+                  </Typography>
+                </Stack>
+              </Fade>
+            )}
+
+            {/* Info Cards */}
+            {!loading && (
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                sx={{ mt: 4, pt: 4, borderTop: "1px solid #e0e0e0" }}
+                role="list"
+                aria-label="How it works"
+              >
+                {[
+                  { icon: "🎬", text: "Paste any YouTube URL", ariaLabel: "Step 1: Paste any YouTube URL" },
+                  { icon: "🤖", text: "AI generates descriptions", ariaLabel: "Step 2: AI generates descriptions" },
+                ].map((item, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      flex: 1,
+                      textAlign: "center",
+                      p: 2,
+                      borderRadius: 2,
+                      bgcolor: "rgba(0,0,0,0.02)",
+                    }}
+                    role="listitem"
+                    aria-label={item.ariaLabel}
+                  >
+                    <Typography 
+                      variant="h5" 
+                      sx={{ mb: 0.5 }}
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {item.text}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Paper>
+        </Fade>
       </Box>
 
       <UploadDialog
