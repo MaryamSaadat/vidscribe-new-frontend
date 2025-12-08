@@ -13,7 +13,7 @@ import UploadVideo from "./pages/UploadVideo";
 import VideoPage from "./pages/VideoPage";
 import UploadURL from "./pages/UploadUrl";
 import EditDescriptions from "./pages/EditDescriptions";
-import { VideoProvider } from "./context/videoContext";
+import { VideoProvider } from "./context/VideoContext";
 import { Authenticator } from '@aws-amplify/ui-react';
 import { defaultDarkModeOverride } from '@aws-amplify/ui-react';
 
