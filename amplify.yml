@@ -14,7 +14,7 @@ frontend:
       commands:
         - npm run build || true 
   artifacts:
-    baseDirectory: ./frontend/build
+    baseDirectory: ./vidscribe-new-frontend/build
     files:
       - '**/*'
   cache:
