@@ -14,7 +14,7 @@ frontend:
       commands:
         - npm run build || true 
   artifacts:
-    baseDirectory: dist
+    baseDirectory: ./frontend/build
     files:
       - '**/*'
   cache:
