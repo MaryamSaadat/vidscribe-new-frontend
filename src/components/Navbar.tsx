@@ -398,7 +398,7 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
       };
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT}/sessions`,
+        `${import.meta.env.VITE_LOG_SESSION_API}`,
         {
           method: 'POST',
           headers: {
