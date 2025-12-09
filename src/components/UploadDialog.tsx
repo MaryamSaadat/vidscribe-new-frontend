@@ -27,6 +27,7 @@ interface CustomizationSettings {
   emphasis?: 'character' | 'environment' | 'general' | 'instructional';
   subjectiveness?: 'objective' | 'subjective';
   colorPreference?: 'include' | 'exclude';
+  frequency?: 8 | 15 | 30;
   personalGuidelines?: string;
 }
 
@@ -36,6 +37,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
   const [emphasis, setEmphasis] = React.useState<string>('general');
   const [subjectiveness, setSubjectiveness] = React.useState<string>('objective');
   const [colorPreference, setColorPreference] = React.useState<string>('include');
+  const [frequency, setFrequency] = React.useState<number>(15);
   const [personalGuidelines, setPersonalGuidelines] = React.useState<string>('');
 
   const handleClose = (): void => {
@@ -49,6 +51,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
     setEmphasis('general');
     setSubjectiveness('objective');
     setColorPreference('include');
+    setFrequency(15);
     setPersonalGuidelines('');
   };
 
@@ -60,6 +63,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
         emphasis: emphasis as CustomizationSettings['emphasis'],
         subjectiveness: subjectiveness as CustomizationSettings['subjectiveness'],
         colorPreference: colorPreference as CustomizationSettings['colorPreference'],
+        frequency: frequency as CustomizationSettings['frequency'],
         personalGuidelines: personalGuidelines || undefined
       })
     };
@@ -120,6 +124,64 @@ const UploadDialog: React.FC<UploadDialogProps> = ({ open, setOpen, onConfirm })
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
               Audio Description Settings
             </Typography>
+
+            {/* Frequency Options */}
+            <FormControl component="fieldset" fullWidth sx={{ mb: 4 }}>
+              <FormLabel 
+                component="legend" 
+                sx={{ mb: 2, fontWeight: 500 }}
+                id="frequency-options-label"
+              >
+                Description Frequency
+              </FormLabel>
+              <RadioGroup 
+                value={frequency} 
+                onChange={(e) => setFrequency(Number(e.target.value))}
+                aria-labelledby="frequency-options-label"
+              >
+                <FormControlLabel 
+                  value={8} 
+                  control={<Radio inputProps={{ 'aria-label': 'Frequent descriptions - Approximately every 8 seconds' }} />} 
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>Frequent (Every ~8 seconds)</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Maximum detail with descriptions appearing frequently throughout the video
+                      </Typography>
+                    </Box>
+                  }
+                />
+                <FormControlLabel 
+                  value={15} 
+                  control={<Radio inputProps={{ 'aria-label': 'Moderate descriptions - Approximately every 15 seconds' }} />} 
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>Moderate (Every ~15 seconds)</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Balanced pacing with regular description intervals
+                      </Typography>
+                    </Box>
+                  }
+                />
+                <FormControlLabel 
+                  value={30} 
+                  control={<Radio inputProps={{ 'aria-label': 'Sparse descriptions - Approximately every 30 seconds' }} />} 
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>Sparse (Every ~30 seconds)</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Less frequent descriptions focusing on major visual changes only
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </RadioGroup>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                Choose how often audio descriptions should appear during the video
+              </Typography>
+            </FormControl>
+
+            <Divider sx={{ my: 3 }}/>
 
             {/* Length Slider */}
             <FormControl fullWidth sx={{ mb: 4 }}>

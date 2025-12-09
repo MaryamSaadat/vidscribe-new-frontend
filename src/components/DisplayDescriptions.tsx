@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Divider, Chip } from "@mui/material";
+import { Box, Typography, Divider, Paper } from "@mui/material";
+import { formatDuration as formatTime } from "../utils/constants";
 import TextToSpeech from "./TextToSpeech";
 
 interface Description {
@@ -27,8 +28,8 @@ const DisplayDescriptions: React.FC<DisplayDescriptionsProps> = ({
   };
 
   return (
-    <Box 
-      sx={{ 
+    <Box
+      sx={{
         backgroundColor: "white",
         borderRadius: 2,
         boxShadow: 3,
@@ -36,8 +37,8 @@ const DisplayDescriptions: React.FC<DisplayDescriptionsProps> = ({
       }}
     >
       {/* Header with timestamp */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           backgroundColor: "primary.main",
           px: 2.5,
           py: 1.5,
@@ -59,18 +60,39 @@ const DisplayDescriptions: React.FC<DisplayDescriptionsProps> = ({
             ml: "auto"
           }}
         /> */}
+        <Paper
+          elevation={0}
+          aria-label="TimeStamp"
+          sx={{
+            backgroundColor: "rgba(255, 255, 255, 0.2)",
+            color: "white",
+            px: 1.5,
+            py: 0.5,
+            borderRadius: 2,
+            display: "inline-flex",
+            alignItems: "center"
+          }}
+        >
+          <Typography
+            variant="body2"
+            component="span"
+            sx={{ fontWeight: 500, fontSize: "0.875rem" }}
+          >
+            {`${formatTime(parseInt(description.timestamp_start))} - ${formatTime(parseInt(description.timestamp_end))}`}
+          </Typography>
+        </Paper>
       </Box>
 
       {/* Description text */}
       <Box sx={{ p: 2.5 }}>
-        <Typography 
-          variant="body1" 
+        <Typography
+          variant="body1"
           mb={2.5}
         >
           {description.text_history}
         </Typography>
 
-        <Divider sx={{ mb: 2.5 }}/>
+        <Divider sx={{ mb: 2.5 }} />
 
         <TextToSpeech
           text={description.text_history}

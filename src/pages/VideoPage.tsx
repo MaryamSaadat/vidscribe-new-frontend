@@ -6,13 +6,6 @@ import Navbar from "../components/Navbar";
 import SideNav from "../components/SideNav";
 import VideoPlayer from "../components/VideoPlayer";
 import Comment from "../components/Comment";
-// import {
-//   Comment,
-//   Navbar,
-//   YoutubeVideoPlayer,
-//   ChangeRating,
-//   VideoPlayer,
-// } from "../components/";
 import { useNavigate, useParams } from "react-router-dom";
 import axios, { AxiosError } from "axios";
 import Cookies from "js-cookie";
@@ -37,29 +30,6 @@ interface ProgressData {
 
 interface VideoPageParams {
     video_id: string;
-}
-
-function ensureVideoUrlFormat(url: string | null | undefined): string | null {
-    if (url == null) {
-        console.error("Error: URL is null or undefined");
-        return null;
-    }
-    if (!url.startsWith("videos/")) {
-        url = "videos/" + url;
-    }
-    return url;
-}
-
-function ensureVideoId(url: string | undefined): string | null {
-    if (url) {
-        const match = url.match(
-            /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|.*[&?]))([^&?\s]+)/
-        );
-        if (match && match[1]) {
-            return match[1];
-        }
-    }
-    return null;
 }
 
 

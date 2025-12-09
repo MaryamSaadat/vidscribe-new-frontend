@@ -28,6 +28,7 @@ interface CustomizationSettings {
   emphasis?: 'character' | 'environment' | 'general' | 'instructional';
   subjectiveness?: 'objective' | 'subjective';
   colorPreference?: 'include' | 'exclude';
+  frequency?: 8 | 15 | 30;
   personalGuidelines?: string;
 }
 

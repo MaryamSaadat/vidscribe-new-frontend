@@ -6,7 +6,7 @@ import { ThemeProvider, CssBaseline, Box } from '@mui/material';        // ok fo
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles'; // provider here
 import { theme } from './theme';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
+import Search from './pages/Search';
 import Feed from './pages/Feed';
 import AboutPage from './pages/AboutPage';
 import UploadVideo from "./pages/UploadVideo";
@@ -79,6 +79,7 @@ function App() {
                 <Route path="/VideoPage/:video_id" element={<VideoPage />} />
                 <Route path="/UploadUrl" element={<UploadURL />} />
                 <Route path="/EditDescriptions" element={<EditDescriptions />} />
+                <Route path="/video-search/:searchQuery" element={<Search />} />
               </Routes>
             </Authenticator>
           </BrowserRouter>
