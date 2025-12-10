@@ -108,7 +108,7 @@ const Comment: React.FC<CommentProps> = ({ videoID }) => {
         aria-label="No questions yet"
       >
         <Typography variant="body1" color="text.secondary">
-          Be the first to ask a question on this video
+          Be the first to ask AI what is visually present in the video!
         </Typography>
       </Box>
     );

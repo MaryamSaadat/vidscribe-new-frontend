@@ -33,6 +33,7 @@ interface VideoPageParams {
 }
 
 
+
 const VideoPage: React.FC = () => {
     const token = Cookies.get("jwtToken");
     const [isLoading, setLoading] = useState<boolean>(true);
@@ -77,7 +78,7 @@ const VideoPage: React.FC = () => {
         audioDescription: any,
         playVid: boolean
     ): void => {
-        console.log("getting data in this video page", progressData, audioDescription);
+        // console.log("getting data in this video page", progressData, audioDescription);
         setPlayed(progressData);
         setIsplaying(playVid);
     };

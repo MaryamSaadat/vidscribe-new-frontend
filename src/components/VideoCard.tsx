@@ -183,7 +183,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
           </Typography>
 
           {/* Username */}
-          {username && (
+          {/* {username && (
             <Box
               sx={{
                 display: 'flex',
@@ -204,7 +204,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 {username}
               </Typography>
             </Box>
-          )}
+          )} */}
 
           {/* Watch CTA */}
           <Box

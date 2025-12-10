@@ -150,23 +150,6 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
           Turn {turnOnOff} descriptions
         </Button>
 
-        <Button
-          variant="outlined"
-          fullWidth
-          onClick={() => window.open('https://docs.google.com/forms/d/1bVCitxIXpS75luCMR0gvrsFUernKAUMWCmX2tn3QZbs/edit?ts=69262939', '_blank', 'noopener,noreferrer')}
-          sx={{
-            py: 1.5,
-            px: 2.5,
-            textTransform: "none",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "translateY(-2px)",
-            },
-          }}
-          aria-label="Once you have watched the video, you can fill the video questionnaire by clicking this button"
-        >
-          Post Video Questionnaire
-        </Button>
 
         {/* Ask AI */}
         <AskAI videoID={video_id} timeStamp={time} videoUrl={videoUrl} videoAD={videoDescriptions} username={user.signInDetails?.loginId} />

@@ -10,7 +10,8 @@ import KeyboardVoiceIcon from "@mui/icons-material/KeyboardVoice";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import beepStart from "../assets/beepStart.mp3";
 import beepStop from "../assets/beepStop.mp3";
-import { ASK_AI_API } from "../utils/constants";
+import { ASK_AI_API, formatTime } from "../utils/constants";
+import { useTextToSpeech } from '../context/TexttoSpeechContext';
 
 interface AskAIProps {
   videoID: number | undefined;
@@ -42,6 +43,7 @@ export default function AskAI({
   const [response, setResponse] = useState<string>("");
   const [alertText, setAlertText] = useState("");
   const [showAlert, setShowAlert] = useState(false);
+  const { speak } = useTextToSpeech();
 
   // console.log("AskAI props:", { videoID, timeStamp, videoUrl, videoAD, screenshotCount, screenshotIntervalSec });
 
@@ -113,7 +115,7 @@ export default function AskAI({
       const cmdKey = isMac ? ev.metaKey : ev.ctrlKey;
 
       // Open AskAI dialog
-      if (cmdKey && ev.key.toLowerCase() === 'q') {
+      if (cmdKey && ev.key.toLowerCase() === 'v' && !open) {
         setOpen(true);
         startListening();
       }
@@ -252,10 +254,7 @@ export default function AskAI({
         timestamps,
         screenshots_base64: base64s,
       };
-
-      // optional extra context
-      if (videoAD) payload.video_ad = videoAD;
-      if (videoUrl) payload.youtube_url = videoUrl;
+      console.log("AskAI payload:", payload);
 
       // 3) Send to Lambda
       const resp = await axios.post(LAMBDA_API_URL, payload);
@@ -268,6 +267,7 @@ export default function AskAI({
             ? data.gemini_response
             : JSON.stringify(data.gemini_response, null, 2)
         );
+        speak(data.gemini_response);
       }
 
       // 5) Preview screenshots returned (optional)
@@ -302,7 +302,7 @@ export default function AskAI({
         onClick={() => { setOpen(true); startListening(); }}
         startIcon={<PlayArrowIcon />}
       >
-        Ask question at {timeStamp}
+        Ask a visual question at {formatTime(timeStamp)}
       </Button>
 
       <Dialog open={open} onClose={() => { setOpen(false); stopListening(); }} fullWidth maxWidth="sm">
@@ -326,7 +326,7 @@ export default function AskAI({
           </Typography>
 
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-            Press <strong>q</strong> to open • Press <strong>s</strong> to start/stop listening
+            Press <strong>COMMAND & Q</strong> to open • Press <strong>COMMAND & S</strong> to submit question
           </Typography>
         </Box>
 
@@ -382,7 +382,7 @@ export default function AskAI({
           </Box>
 
           {/* Show captured screenshots preview if present */}
-          {capturedPreviewImages.length > 0 && (
+          {/* {capturedPreviewImages.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="caption" color="text.secondary">
                 Captured screenshots:
@@ -398,14 +398,13 @@ export default function AskAI({
                   />
                 ))}
               </Box>
-              {/* show timestamps for each preview (if available) */}
               {capturedTimestamps.length > 0 && (
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
                   Times: {capturedTimestamps.map(t => t.toFixed(2)).join(", ")}s
                 </Typography>
               )}
             </Box>
-          )}
+          )} */}
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2 }}>

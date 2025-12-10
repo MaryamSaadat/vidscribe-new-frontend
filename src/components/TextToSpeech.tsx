@@ -170,19 +170,19 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({
           onClick={handlePlay}
           startIcon={isPaused ? <PlayArrowIcon /> : <PlayArrowIcon />}
         >
-          {isPaused ? "Resume" : "Play"}
+          {isPaused ? "Resume Current Description" : "Play Current Description"}
         </Button>
         <Button
           onClick={handlePause}
           startIcon={<PauseIcon />}
         >
-          Pause
+          Pause Current Description
         </Button>
         <Button
           onClick={handleStop}
           startIcon={<StopIcon />}
         >
-          Stop
+          Stop Current Description
         </Button>
       </ButtonGroup>
     </Box>

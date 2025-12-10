@@ -9,7 +9,6 @@ import {
   CircularProgress,
   TextField,
   Paper,
-  Container,
   Fade,
   Stack,
 } from "@mui/material";
@@ -21,6 +20,7 @@ import axios from "axios";
 import { DRAWERWIDTH, PROCESS_YOUTUBE_FILE_URL } from "../utils/constants";
 import UploadDialog from "../components/UploadDialog";
 import { useAuthenticator } from '@aws-amplify/ui-react';
+import { useTextToSpeech } from '../context/TexttoSpeechContext';
 
 interface CustomizationSettings {
   mode: 'none' | 'custom';
@@ -36,28 +36,17 @@ const UploadURL: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [heading, setHeading] = useState<string>("Add a YouTube Video");
   const [smallHeading, setSmallHeading] = useState<string>(
-    "Generate audio descriptions for a youtube video by pasting the URL below."
+    "Generate audio descriptions for a youtube video by pasting the URL below. Video should be Shorter than 10 minutesxw."
   );
   const [url, setUrl] = useState<string>("");
   const [visibility, setVisibility] = useState<string>("public");
   const [alertOpen, setAlertOpen] = useState<boolean>(false);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const { user } = useAuthenticator();
+  const { speak, stop, isSupported } = useTextToSpeech();
 
   const navigate = useNavigate();
 
-  // Speech synthesis function
-  const speak = (text: string): void => {
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    window.speechSynthesis.speak(utterance);
-  };
 
   // Cleanup speech on unmount
   useEffect(() => {
@@ -94,41 +83,51 @@ const UploadURL: React.FC = () => {
       "Generating audio descriptions... This may take a few moments. Please don't refresh the page."
     );
     setLoading(true);
-    
+
     // Announce processing started
-    speak("Video processing started. Generating audio descriptions. This may take a few moments. Please don't refresh the page.");
+    speak("Generating audio descriptions. This may take a few minutes. Please don't refresh the page.");
 
     axios
       .post(apiUrl, postData)
       .then((response) => {
         console.log("Response:", response.data);
-        
+
         // Extract video_id from response body
-        const responseBody = typeof response.data === 'string' 
-          ? JSON.parse(response.data) 
+        const responseBody = typeof response.data === 'string'
+          ? JSON.parse(response.data)
           : response.data;
-        
+
         const videoId = responseBody.video_id;
-        
+
         if (videoId) {
-          // Announce success
-          speak("Video processing completed successfully. Navigating to video page.");
           // Navigate to video page with the video ID
           navigate(`/VideoPage/${videoId}`);
         } else {
           console.error("No video_id in response");
-          speak("Video processed but no video ID was returned. Navigating to home page.");
           navigate("/");
         }
       })
       .catch((error) => {
-        console.error("Error:", error);
-        setLoading(false);
-        setHeading("Something Went Wrong");
-        setSmallHeading("Please check your URL and try again. Make sure it's a valid YouTube link.");
-        
-        // Announce error
-        speak("An error occurred while processing your video. Please check your URL and try again. Make sure it's a valid YouTube link.");
+        if (error.response.data.error == "video_too_long") {
+          setLoading(false);
+          setHeading("Video Too long");
+          setSmallHeading("Please upload a shorter video (less than 10 minutes).");
+
+          // Announce error
+          speak("You uploaded a video that is too long. Please upload a shorter video, less than 10 minutes.");
+          return;
+        }
+        else {
+          console.log(error.response);
+          console.error("Error:", error);
+          setLoading(false);
+          setHeading("Something Went Wrong");
+          setSmallHeading("Please check your URL and try again. Make sure it's a valid YouTube link.");
+
+          // Announce error
+          speak("An error occurred while processing your video. Please check your URL and try again. Make sure it's a valid YouTube link and the video is shorter than 10 minutes.");
+        }
+
       });
   };
 
@@ -137,8 +136,8 @@ const UploadURL: React.FC = () => {
       <SideNav />
       <Box
         component="main"
-        sx={{ 
-          flexGrow: 1, 
+        sx={{
+          flexGrow: 1,
           p: 4,
           width: { sm: `calc(100% - ${DRAWERWIDTH}px)` },
           display: 'flex',
@@ -182,12 +181,12 @@ const UploadURL: React.FC = () => {
                 aria-label={loading ? "Processing video" : "Video library icon"}
               >
                 {loading ? (
-                  <CircularProgress 
-                    size={40} 
+                  <CircularProgress
+                    size={40}
                     aria-label="Loading, please wait"
                   />
                 ) : (
-                  <VideoLibraryIcon 
+                  <VideoLibraryIcon
                     sx={{ fontSize: 40, color: "primary.main" }}
                     aria-hidden="true"
                   />
@@ -274,21 +273,16 @@ const UploadURL: React.FC = () => {
             {/* Loading State */}
             {loading && (
               <Fade in timeout={600}>
-                <Stack 
-                  spacing={2} 
-                  alignItems="center" 
+                <Stack
+                  spacing={2}
+                  alignItems="center"
                   sx={{ py: 4 }}
                   role="status"
                   aria-live="polite"
                   aria-busy="true"
                 >
-                  {/* <CircularProgress 
-                    size={60} 
-                    thickness={4}
-                    aria-label="Processing video, please wait"
-                  /> */}
-                  <Typography 
-                    variant="body2" 
+                  <Typography
+                    variant="body2"
                     color="text.secondary"
                     aria-live="polite"
                   >
@@ -323,8 +317,8 @@ const UploadURL: React.FC = () => {
                     role="listitem"
                     aria-label={item.ariaLabel}
                   >
-                    <Typography 
-                      variant="h5" 
+                    <Typography
+                      variant="h5"
                       sx={{ mb: 0.5 }}
                       aria-hidden="true"
                     >

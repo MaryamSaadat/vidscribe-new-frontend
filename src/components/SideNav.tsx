@@ -254,8 +254,11 @@
 
 // export default ResponsiveDrawer;
 
+
+// src/components/ResponsiveDrawer.tsx
 import * as React from 'react';
 import Box from '@mui/material/Box';
+import CssBaseline from '@mui/material/CssBaseline';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -277,6 +280,7 @@ import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import { categories } from '../utils/constants';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuthenticator } from '@aws-amplify/ui-react';
 import logo from '../utils/Logo.png';
 import type { Category } from '../utils/constants';
 
@@ -288,16 +292,19 @@ interface ResponsiveDrawerProps {
   setSelectedCategory?: (category: string) => void;
 }
 
+interface SessionEvent {
+  type: 'start' | 'pause' | 'resume' | 'stop';
+  time: string; // ISO
+}
+
 interface SessionData {
   sessionId: string;
-  startTime: string;
-  endTime?: string;
-  pauses: Array<{
-    pauseTime: string;
-    resumeTime?: string;
-  }>;
+  startTime: string;                // when the session was originally started (ISO)
+  lastStartTime?: string | null;    // when it was last started/resumed (ISO) — null if paused/stopped
+  accumulatedSeconds: number;       // total seconds counted from previous active periods
+  events: SessionEvent[];
   status: 'active' | 'paused' | 'stopped';
-  totalDuration?: number;
+  totalDuration?: number;           // filled on stop
 }
 
 // Icon mapping for categories
@@ -314,12 +321,19 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
 }) => {
   const [mobileOpen, setMobileOpen] = React.useState<boolean>(false);
   const [isClosing, setIsClosing] = React.useState<boolean>(false);
+
+  // Session & timer state
   const [sessionData, setSessionData] = React.useState<SessionData | null>(null);
-  const [currentTime, setCurrentTime] = React.useState<number>(0);
+  const [currentTime, setCurrentTime] = React.useState<number>(0); // seconds
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const location = useLocation();
-  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const timerRef = React.useRef<number | null>(null);
   const announcementRef = React.useRef<HTMLDivElement>(null);
+
+  const location = useLocation();
+
+  // Get authenticated user
+  const { user } = useAuthenticator();
+  const username = (user as any)?.signInDetails?.loginId || (user as any)?.username || 'unknown_user';
 
   // Screen reader announcement function
   const announceToScreenReader = (message: string) => {
@@ -328,89 +342,23 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
     }
   };
 
-  // Load session from localStorage on mount
-  React.useEffect(() => {
-    const savedSession = localStorage.getItem('userSession');
-    if (savedSession) {
-      try {
-        const parsed = JSON.parse(savedSession);
-        setSessionData(parsed);
-        // Calculate elapsed time for both active and paused sessions
-        const elapsed = calculateElapsedTime(parsed);
-        setCurrentTime(elapsed);
-      } catch (error) {
-        console.error('Error loading session:', error);
-        localStorage.removeItem('userSession');
-      }
-    }
-  }, []);
-
-  // Timer effect
-  React.useEffect(() => {
-    if (sessionData?.status === 'active') {
-      timerRef.current = setInterval(() => {
-        setCurrentTime((prev) => prev + 1);
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [sessionData?.status]);
-
-  // Calculate elapsed time considering pauses
-  const calculateElapsedTime = (session: SessionData): number => {
-    const start = new Date(session.startTime).getTime();
-    const now = Date.now();
-    let totalPausedTime = 0;
-
-    // Calculate total paused time from completed pauses
-    session.pauses.forEach((pause) => {
-      const pauseStart = new Date(pause.pauseTime).getTime();
-      // Only count paused time for completed pauses (those with resumeTime)
-      if (pause.resumeTime) {
-        const pauseEnd = new Date(pause.resumeTime).getTime();
-        totalPausedTime += pauseEnd - pauseStart;
-      }
-    });
-
-    // If currently paused, calculate time up to the pause point (not including current pause duration)
-    if (session.status === 'paused' && session.pauses.length > 0) {
-      const lastPause = session.pauses[session.pauses.length - 1];
-      if (!lastPause.resumeTime) {
-        // Use the pause time as the "end" point for calculation
-        const pauseStart = new Date(lastPause.pauseTime).getTime();
-        return Math.floor((pauseStart - start - totalPausedTime) / 1000);
-      }
-    }
-
-    // For active sessions, calculate up to now
-    return Math.floor((now - start - totalPausedTime) / 1000);
-  };
-
-  // Format time for display
-  const formatTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Save session to DynamoDB via Lambda
+  // ------------ Persist / Save to backend ------------
   const saveSessionToDatabase = async (session: SessionData) => {
     setIsLoading(true);
     try {
+      const sessionWithUser = {
+        ...session,
+        username,
+      };
+
       const response = await fetch(
         `${import.meta.env.VITE_LOG_SESSION_API}`,
         {
           method: 'POST',
-          body: JSON.stringify(session),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(sessionWithUser),
         }
       );
 
@@ -430,111 +378,181 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
     }
   };
 
-  // Start session
+  // ---------- Local persistence helper ----------
+  const persistLocal = (session: SessionData) => {
+    try {
+      localStorage.setItem('userSession', JSON.stringify(session));
+    } catch (e) {
+      console.warn('Could not persist session locally', e);
+    }
+  };
+
+  // ---------- Load session from localStorage on mount ----------
+  React.useEffect(() => {
+    const saved = localStorage.getItem('userSession');
+    if (!saved) return;
+    try {
+      const parsed: SessionData = JSON.parse(saved);
+
+      const now = Date.now();
+      let elapsed = parsed.accumulatedSeconds || 0;
+      if (parsed.lastStartTime && parsed.status === 'active') {
+        elapsed += Math.floor((now - new Date(parsed.lastStartTime).getTime()) / 1000);
+      }
+
+      setSessionData(parsed);
+      setCurrentTime(elapsed);
+    } catch (err) {
+      console.error('Failed to parse saved session:', err);
+      localStorage.removeItem('userSession');
+    }
+  }, []);
+
+  // ---------- Timer effect: tick only when active ----------
+  React.useEffect(() => {
+    if (sessionData?.status === 'active') {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+      timerRef.current = window.setInterval(() => {
+        setCurrentTime((prev) => prev + 1);
+      }, 1000) as unknown as number;
+    } else {
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [sessionData?.status]);
+
+  // ---------- Utility: formatTime ----------
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // ---------- Handlers: start / pause / resume / stop ----------
   const handleStartSession = async () => {
+    const nowIso = new Date().toISOString();
     const newSession: SessionData = {
-      sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      startTime: new Date().toISOString(),
-      pauses: [],
+      sessionId: `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      startTime: nowIso,
+      lastStartTime: nowIso,
+      accumulatedSeconds: 0,
+      events: [{ type: 'start', time: nowIso }],
       status: 'active',
     };
 
     setSessionData(newSession);
     setCurrentTime(0);
-    localStorage.setItem('userSession', JSON.stringify(newSession));
+    persistLocal(newSession);
     announceToScreenReader('Session started successfully. Timer is now running.');
 
     try {
       await saveSessionToDatabase(newSession);
-    } catch (error) {
-      console.error('Error saving session start:', error);
+    } catch (err) {
+      console.error('Error saving session start:', err);
     }
   };
 
-  // Pause session
   const handlePauseSession = async () => {
-    if (!sessionData) return;
+    if (!sessionData || sessionData.status !== 'active' || !sessionData.lastStartTime) return;
 
-    const updatedSession: SessionData = {
+    const now = Date.now();
+    const lastStartMs = new Date(sessionData.lastStartTime).getTime();
+    const secondsThisRun = Math.floor((now - lastStartMs) / 1000);
+
+    const updated: SessionData = {
       ...sessionData,
+      accumulatedSeconds: (sessionData.accumulatedSeconds || 0) + secondsThisRun,
+      lastStartTime: null,
+      events: [...sessionData.events, { type: 'pause', time: new Date().toISOString() }],
       status: 'paused',
-      pauses: [
-        ...sessionData.pauses,
-        {
-          pauseTime: new Date().toISOString(),
-        },
-      ],
     };
 
-    setSessionData(updatedSession);
-    localStorage.setItem('userSession', JSON.stringify(updatedSession));
-    announceToScreenReader(`Session paused at ${formatTime(currentTime)}. Timer stopped.`);
+    setSessionData(updated);
+    setCurrentTime(updated.accumulatedSeconds);
+    persistLocal(updated);
+    announceToScreenReader(`Session paused at ${formatTime(updated.accumulatedSeconds)}.`);
 
     try {
-      await saveSessionToDatabase(updatedSession);
-    } catch (error) {
-      console.error('Error saving session pause:', error);
+      await saveSessionToDatabase(updated);
+    } catch (err) {
+      console.error('Error saving session pause:', err);
     }
   };
 
-  // Resume session
   const handleResumeSession = async () => {
-    if (!sessionData) return;
+    if (!sessionData || sessionData.status !== 'paused') return;
 
-    const updatedPauses = [...sessionData.pauses];
-    const lastPause = updatedPauses[updatedPauses.length - 1];
-    if (lastPause && !lastPause.resumeTime) {
-      lastPause.resumeTime = new Date().toISOString();
-    }
-
-    const updatedSession: SessionData = {
+    const nowIso = new Date().toISOString();
+    const updated: SessionData = {
       ...sessionData,
+      lastStartTime: nowIso,
+      events: [...sessionData.events, { type: 'resume', time: nowIso }],
       status: 'active',
-      pauses: updatedPauses,
     };
 
-    setSessionData(updatedSession);
-    localStorage.setItem('userSession', JSON.stringify(updatedSession));
+    setSessionData(updated);
+    setCurrentTime(updated.accumulatedSeconds);
+    persistLocal(updated);
     announceToScreenReader('Session resumed. Timer is now running.');
 
     try {
-      await saveSessionToDatabase(updatedSession);
-    } catch (error) {
-      console.error('Error saving session resume:', error);
+      await saveSessionToDatabase(updated);
+    } catch (err) {
+      console.error('Error saving session resume:', err);
     }
   };
 
-  // Stop session
   const handleStopSession = async () => {
     if (!sessionData) return;
 
-    const totalDuration = currentTime;
-    const updatedSession: SessionData = {
+    const now = Date.now();
+    let finalSeconds = sessionData.accumulatedSeconds || 0;
+
+    if (sessionData.lastStartTime && sessionData.status === 'active') {
+      finalSeconds += Math.floor((now - new Date(sessionData.lastStartTime).getTime()) / 1000);
+    }
+
+    const updated: SessionData = {
       ...sessionData,
-      endTime: new Date().toISOString(),
+      lastStartTime: null,
+      accumulatedSeconds: finalSeconds,
+      totalDuration: finalSeconds,
+      events: [...sessionData.events, { type: 'stop', time: new Date().toISOString() }],
       status: 'stopped',
-      totalDuration,
     };
 
-    setSessionData(updatedSession);
-    localStorage.setItem('userSession', JSON.stringify(updatedSession));
+    setSessionData(updated);
+    setCurrentTime(finalSeconds);
+    persistLocal(updated);
     announceToScreenReader(
-      `Session stopped. Total duration: ${formatTime(totalDuration)}. Session data saved.`
+      `Session stopped. Total duration: ${formatTime(finalSeconds)}. Session data saved.`
     );
 
     try {
-      await saveSessionToDatabase(updatedSession);
+      await saveSessionToDatabase(updated);
+      // Clear local state after short delay so user hears the announcement
       setTimeout(() => {
         localStorage.removeItem('userSession');
         setSessionData(null);
         setCurrentTime(0);
         announceToScreenReader('Session cleared. You can start a new session.');
-      }, 3000);
-    } catch (error) {
-      console.error('Error saving session stop:', error);
+      }, 1000);
+    } catch (err) {
+      console.error('Error saving session stop:', err);
     }
   };
 
+  // ---------- Drawer controls ----------
   const handleDrawerClose = (): void => {
     setIsClosing(true);
     setMobileOpen(false);
@@ -563,6 +581,7 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
     }
   };
 
+  // ---------- Drawer content ----------
   const drawer = (
     <Box 
       sx={{ 
@@ -632,7 +651,7 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
         sx={{ flex: 1, pt: 2 }}
         aria-label="Navigation menu"
       >
-        {categories.map((category: Category, idx: number) => {
+        {categories.map((category: Category) => {
           const isActive = location.pathname === category.href;
           
           return (
@@ -713,13 +732,6 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
           }}
         >
           <Stack spacing={0.5} alignItems="center">
-            {/* <Chip
-              label={sessionData?.status || 'No Session'}
-              color={getStatusColor()}
-              size="small"
-              aria-label={`Session status: ${sessionData?.status || 'No Session'}`}
-              sx={{ fontSize: '0.7rem' }}
-            /> */}
             <Typography
               variant="h6"
               component="div"

@@ -15,10 +15,16 @@ interface VideosProps {
 }
 
 const Videos: React.FC<VideosProps> = ({ videos }) => {
-  console.log('these are the props', videos);
-  
-  // Reverse the array to display videos in a Last In, First Out (LIFO) order
-  const reversedVideos: Video[] = [...videos].reverse();
+  console.log('these are the props', videos.length);
+  // Sort videos by ID descending (highest ID first). Handles numeric and string IDs.
+  const reversedVideos: Video[] = [...videos].sort((a, b) => {
+    const na = Number(a.id);
+    const nb = Number(b.id);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+      return nb - na;
+    }
+    return String(b.id).localeCompare(String(a.id));
+  });
 
   return (
     <Stack

@@ -15,7 +15,9 @@ import UploadURL from "./pages/UploadUrl";
 import EditDescriptions from "./pages/EditDescriptions";
 import { VideoProvider } from "./context/VideoContext";
 import { Authenticator } from '@aws-amplify/ui-react';
+import { TextToSpeechProvider } from "./context/TexttoSpeechContext";
 import { defaultDarkModeOverride } from '@aws-amplify/ui-react';
+import Logo from "./utils/Logo.png";
 
 const amplifyTheme = {
   name: "custom-theme",
@@ -43,13 +45,12 @@ const amplifyTheme = {
   ],
 };
 
-
 const components = {
   Header() {
     return (
       <img
         alt="VidScribe Logo"
-        src="src/utils/Logo.png"
+        src={Logo}
         style={{
           width: 400,
           margin: "20px auto",
@@ -60,8 +61,6 @@ const components = {
   },
 };
 
-
-
 const client = generateClient<Schema>();
 
 function App() {
@@ -70,19 +69,21 @@ function App() {
     <MUIThemeProvider theme={theme}>
       <Box className="pattern" sx={{ minHeight: '100vh' }}>
         <VideoProvider>
-          <BrowserRouter>
-            <Authenticator components={components} theme={amplifyTheme}>
-              <Routes>
-                <Route path="/" element={<Feed />} />
-                <Route path="/AboutPage" element={<AboutPage />} />
-                <Route path="/UploadVideo" element={<UploadVideo />} />
-                <Route path="/VideoPage/:video_id" element={<VideoPage />} />
-                <Route path="/UploadUrl" element={<UploadURL />} />
-                <Route path="/EditDescriptions" element={<EditDescriptions />} />
-                <Route path="/video-search/:searchQuery" element={<Search />} />
-              </Routes>
-            </Authenticator>
-          </BrowserRouter>
+          <TextToSpeechProvider>
+            <BrowserRouter>
+              <Authenticator components={components} theme={amplifyTheme}>
+                <Routes>
+                  <Route path="/" element={<Feed />} />
+                  <Route path="/AboutPage" element={<AboutPage />} />
+                  <Route path="/UploadVideo" element={<UploadVideo />} />
+                  <Route path="/VideoPage/:video_id" element={<VideoPage />} />
+                  <Route path="/UploadUrl" element={<UploadURL />} />
+                  <Route path="/EditDescriptions" element={<EditDescriptions />} />
+                  <Route path="/video-search/:searchQuery" element={<Search />} />
+                </Routes>
+              </Authenticator>
+            </BrowserRouter>
+          </TextToSpeechProvider>
         </VideoProvider>
       </Box>
     </MUIThemeProvider>
