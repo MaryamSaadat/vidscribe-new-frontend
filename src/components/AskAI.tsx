@@ -44,6 +44,9 @@ export default function AskAI({
   const [alertText, setAlertText] = useState("");
   const [showAlert, setShowAlert] = useState(false);
   const { speak } = useTextToSpeech();
+  const isMac = navigator.userAgent.includes('Mac');
+  const modifierKey = isMac ? 'COMMAND' : 'CTRL';
+
 
   // console.log("AskAI props:", { videoID, timeStamp, videoUrl, videoAD, screenshotCount, screenshotIntervalSec });
 
@@ -111,17 +114,16 @@ export default function AskAI({
 
   useEffect(() => {
     const handler = (ev: KeyboardEvent) => {
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdKey = isMac ? ev.metaKey : ev.ctrlKey;
 
-      // Open AskAI dialog
-      if (cmdKey && ev.key.toLowerCase() === 'v' && !open) {
+      if (cmdKey && ev.key.toLowerCase() === 'k' && !open) {
+        ev.preventDefault();
         setOpen(true);
-        startListening();
       }
 
-      // Capture screenshots / trigger question submission
-      if (cmdKey && ev.key.toLowerCase() === 's' && open) {
+      // Cmd+Enter to submit
+      if (cmdKey && ev.key === 'Enter' && open) {
+        ev.preventDefault();
         handleQuestion();
       }
     };
@@ -212,7 +214,7 @@ export default function AskAI({
     setCapturedPreviewImages([]);
     setCapturedBase64Payload([]);
     setCapturedTimestamps([]);
-
+    console.log("videoUrl for screenshot capture:", videoUrl);
     if (!videoUrl) return { base64s: [], timestamps: [] };
     // if it's a YouTube URL, avoid client capture (CORS) — let backend download and extract
     const isYouTube = /youtu(be)?\.?/.test(videoUrl);
@@ -244,15 +246,17 @@ export default function AskAI({
       // 1) Prepare screenshots from video (client-side)
       const { base64s, timestamps } = await prepareScreenshots();
 
+
       // 2) Build payload for Lambda
+      const mainIndex = base64s.length ? Math.floor(base64s.length / 2) : -1;
       const payload: any = {
         video_id: String(videoID),
         username: username || "anonymous",
         timestamp: timeStamp,
         question: editableTranscript,
         video_ad: videoAD || undefined,
-        timestamps,
-        screenshots_base64: base64s,
+        main_frame: mainIndex >= 0 ? base64s[mainIndex] : undefined, // optional main frame
+        adjacent_screenshots: mainIndex >= 0 ? base64s.filter((_, idx) => idx !== mainIndex) : [],
       };
       console.log("AskAI payload:", payload);
 
@@ -299,7 +303,7 @@ export default function AskAI({
       <Button
         variant="contained"
         sx={{ borderRadius: 3, px: 3, py: 1.25, width: "100%", textTransform: "none" }}
-        onClick={() => { setOpen(true); startListening(); }}
+        onClick={() => { setOpen(true) }}
         startIcon={<PlayArrowIcon />}
       >
         Ask a visual question at {formatTime(timeStamp)}
@@ -326,7 +330,7 @@ export default function AskAI({
           </Typography>
 
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-            Press <strong>COMMAND & Q</strong> to open • Press <strong>COMMAND & S</strong> to submit question
+            Press <strong>{modifierKey} + K</strong> to open • Press <strong>{modifierKey} + Enter</strong> to submit question
           </Typography>
         </Box>
 

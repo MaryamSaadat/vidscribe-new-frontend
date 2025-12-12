@@ -172,12 +172,12 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({
         >
           {isPaused ? "Resume Current Description" : "Play Current Description"}
         </Button>
-        <Button
+        {/* <Button
           onClick={handlePause}
           startIcon={<PauseIcon />}
         >
           Pause Current Description
-        </Button>
+        </Button> */}
         <Button
           onClick={handleStop}
           startIcon={<StopIcon />}

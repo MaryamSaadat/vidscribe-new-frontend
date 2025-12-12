@@ -80,7 +80,7 @@ const UploadURL: React.FC = () => {
 
     setHeading("Processing Your Video");
     setSmallHeading(
-      "Generating audio descriptions... This may take a few moments. Please don't refresh the page."
+      "Generating audio descriptions... This may take a few minutes. Please don't refresh the page."
     );
     setLoading(true);
 
@@ -290,7 +290,7 @@ const UploadURL: React.FC = () => {
                     color="text.secondary"
                     aria-live="polite"
                   >
-                    This usually takes 30-60 seconds...
+                    This usually takes 1-3 minutes based on the video length...
                   </Typography>
                 </Stack>
               </Fade>
