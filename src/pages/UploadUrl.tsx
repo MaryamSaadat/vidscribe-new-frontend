@@ -100,8 +100,12 @@ const UploadURL: React.FC = () => {
         const videoId = responseBody.video_id;
 
         if (videoId) {
-          // Navigate to video page with the video ID
-          navigate(`/VideoPage/${videoId}`);
+          speak("Audio descriptions generated successfully. Now navigating to described video.");
+
+          // ADD: Delay navigation to allow announcement to complete
+          setTimeout(() => {
+            navigate(`/VideoPage/${videoId}`);
+          }, 4000);
         } else {
           console.error("No video_id in response");
           navigate("/");

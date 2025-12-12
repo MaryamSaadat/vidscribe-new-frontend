@@ -93,7 +93,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return (
         <div>
-            {video && (<video id="video" controls width="100%" height="500px">
+            {video && (<video id="video" controls width="100%" height="500px" aria-label={`Play the video`}>
                 <source src={video} type="video/mp4" />
                 Your browser does not support the video tag.
             </video>)}

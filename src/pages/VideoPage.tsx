@@ -147,91 +147,94 @@ const VideoPage: React.FC = () => {
     }, [video_id, token]);
 
     return (
-        <Box sx={{ display: "flex" }}>
-            <SideNav />
-            <Box
-                component="main"
-                sx={{
-                    flexGrow: 1,
-                    width: { sm: `calc(100% - ${DRAWERWIDTH}px)` },
-                }}
-            >
-                <Navbar />
-                {!isLoading && (
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, md: 8 }}>
-                            <>
-                                {video.video_presigned_url ? (
-                                    <VideoPlayer
-                                        yesDesc={descOn}
-                                        videoUrl={video.video_presigned_url}
-                                        playVid={isPlaying}
-                                        title={video.title}
-                                        descriptionList={descUser}
-                                        parentCallback={handleCallback}
-                                    />
-                                ) : (
-                                    <VideoPlayer
-                                        yesDesc={descOn}
-                                        videoUrl={video.video_presigned_url}
-                                        playVid={isPlaying}
-                                        title={video.title}
-                                        descriptionList={descUser}
-                                        parentCallback={handleCallback}
-                                    />
-                                    //   <YoutubeVideoPlayer
-                                    //     yesDesc={descOn}
-                                    //     path={ensureVideoUrlFormat(video.video_presigned_url)}
-                                    //     playVid={isPlaying}
-                                    //     title={video.title}
-                                    //     descrip={undefined}
-                                    //     parentCallback={handleCallback}
-                                    //     videoID={ensureVideoId(video.url)}
-                                    //   />
-                                )}
-                            </>
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 4 }} mt={2}>
-                            <MenuOptions
-                                video_id={video_id}
-                                videoUrl={video.video_presigned_url}
-                                title={video.title}
-                                videoDescriptions={descUser}
-                                parentCallback={handleViewDescriptions}
-                                time={played}
-                                youtubeID={video.url}
-                            />
-                            <Box
-                                sx={{
-                                    backgroundColor: "white",
-                                    mt: 2,
-                                    borderRadius: 2,
-                                    boxShadow: 3,
-                                    overflow: "hidden"
-                                }}
-                            >
-                                {/* Header */}
+        <>
+            <Box sx={{ display: "flex" }}>
+                <SideNav />
+                <Box
+                    component="main"
+                    sx={{
+                        flexGrow: 1,
+                        width: { sm: `calc(100% - ${DRAWERWIDTH}px)` },
+                    }}
+                >
+                    <Navbar />
+                    {!isLoading && (
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, md: 8 }}>
+                                <>
+                                    {video.video_presigned_url ? (
+                                        <VideoPlayer
+                                            yesDesc={descOn}
+                                            videoUrl={video.video_presigned_url}
+                                            playVid={isPlaying}
+                                            title={video.title}
+                                            descriptionList={descUser}
+                                            parentCallback={handleCallback}
+                                        />
+                                    ) : (
+                                        <VideoPlayer
+                                            yesDesc={descOn}
+                                            videoUrl={video.video_presigned_url}
+                                            playVid={isPlaying}
+                                            title={video.title}
+                                            descriptionList={descUser}
+                                            parentCallback={handleCallback}
+                                        />
+                                        //   <YoutubeVideoPlayer
+                                        //     yesDesc={descOn}
+                                        //     path={ensureVideoUrlFormat(video.video_presigned_url)}
+                                        //     playVid={isPlaying}
+                                        //     title={video.title}
+                                        //     descrip={undefined}
+                                        //     parentCallback={handleCallback}
+                                        //     videoID={ensureVideoId(video.url)}
+                                        //   />
+                                    )}
+                                </>
+                            </Grid>
+                            <Grid size={{ xs: 12, md: 4 }} mt={2}>
+                                <MenuOptions
+                                    video_id={video_id}
+                                    videoUrl={video.video_presigned_url}
+                                    title={video.title}
+                                    videoDescriptions={descUser}
+                                    parentCallback={handleViewDescriptions}
+                                    time={played}
+                                    youtubeID={video.url}
+                                />
                                 <Box
                                     sx={{
-                                        backgroundColor: "primary.main",
-                                        p: 2.5,
-                                        color: "white",
+                                        backgroundColor: "white",
+                                        mt: 2,
+                                        borderRadius: 2,
+                                        boxShadow: 3,
+                                        overflow: "hidden"
                                     }}
                                 >
-                                    <Typography variant="body1" fontWeight={600} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                        Visual Q&A
-                                    </Typography>
+                                    {/* Header */}
+                                    <Box
+                                        sx={{
+                                            backgroundColor: "primary.main",
+                                            p: 2.5,
+                                            color: "white",
+                                        }}
+                                    >
+                                        <Typography variant="body1" fontWeight={600} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            Visual Q&A
+                                        </Typography>
+                                    </Box>
+                                    <Divider />
+                                    <Box sx={{ overflow: "scroll", height: "350px" }} p={1}>
+                                        <Comment videoID={video_id} />
+                                    </Box>
                                 </Box>
-                                <Divider />
-                                <Box sx={{ overflow: "scroll", height: "350px" }} p={1}>
-                                    <Comment videoID={video_id} />
-                                </Box>
-                            </Box>
+                            </Grid>
                         </Grid>
-                    </Grid>
-                )}
+                    )}
+
+                </Box>
             </Box>
-        </Box>
+        </>
     );
 };
 
