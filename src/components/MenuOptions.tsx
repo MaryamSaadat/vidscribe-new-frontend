@@ -155,7 +155,7 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
         <AskAI videoID={video_id} timeStamp={time} videoUrl={videoUrl} videoAD={videoDescriptions} username={user.signInDetails?.loginId} />
 
         {/* Edit Descriptions */}
-        {/* <Button
+        <Button
           variant="outlined"
           fullWidth
           startIcon={<EditIcon />}
@@ -172,7 +172,7 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
           aria-label="If you want to edit the descriptions, you can do so by clicking on this button"
         >
           Edit descriptions
-        </Button> */}
+        </Button>
 
         {/* Share Video */}
         <Button

@@ -69,11 +69,11 @@ export const contributors = [
 // Immutable arrays with as const assertion
 export const categories: readonly Category[] = [
   { name: 'Home', icon: HomeIcon, href: '/' },
-  // { name: 'Upload Video', icon: FileUploadIcon, href: '/UploadVideo' },
+  { name: 'Upload Video', icon: FileUploadIcon, href: '/UploadVideo' },
   { name: 'Youtube Video', icon: YouTubeIcon, href: '/UploadUrl' },
-  { name: 'End of Day Survey', icon: PollIcon, href: 'https://docs.google.com/forms/d/e/1FAIpQLSe9vQDfVJgX_nFQCYinCRkezQIrPwj4dbsaWZLDm_fYTrErzA/viewform?usp=dialog' },
-  { name: 'End of Week (Final) Survey', icon: PollIcon, href: 'https://docs.google.com/forms/u/1/d/1W9iYuSzSk5YBJuRZnrSE0AcOKfOpU7Pi7LK4iGEZh1M/edit?usp=sharing_eil_se_dm&ts=69262947' },
-  // { name: 'About ViDScribe', icon: YouTubeIcon, href: '/AboutPage' },
+  // { name: 'End of Day Survey', icon: PollIcon, href: 'https://docs.google.com/forms/d/e/1FAIpQLSe9vQDfVJgX_nFQCYinCRkezQIrPwj4dbsaWZLDm_fYTrErzA/viewform?usp=dialog' },
+  // { name: 'End of Week (Final) Survey', icon: PollIcon, href: 'https://docs.google.com/forms/u/1/d/1W9iYuSzSk5YBJuRZnrSE0AcOKfOpU7Pi7LK4iGEZh1M/edit?usp=sharing_eil_se_dm&ts=69262947' },
+  { name: 'About ViDScribe', icon: YouTubeIcon, href: '/AboutPage' },
 ] as const;
 
 export const people: readonly Person[] = [

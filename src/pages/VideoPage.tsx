@@ -15,7 +15,8 @@ import { DRAWERWIDTH } from "../utils/constants";
 interface Video {
     video_presigned_url?: string;
     title: string;
-    url: string;
+    url?: string; // S3 URL (legacy field)
+    youtube_url?: string; // YouTube URL from database
 }
 
 interface Description {
@@ -104,6 +105,11 @@ const VideoPage: React.FC = () => {
             .then((response) => {
                 setVideo(response.data.video);
                 console.log("Received video data", response);
+                console.log("Video URLs:", {
+                    presignedUrl: response.data.video.video_presigned_url,
+                    youtubeUrl: response.data.video.youtube_url,
+                    legacyUrl: response.data.video.url
+                });
             })
             .catch((err: AxiosError) => {
                 console.log(err);
@@ -161,36 +167,14 @@ const VideoPage: React.FC = () => {
                     {!isLoading && (
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, md: 8 }}>
-                                <>
-                                    {video.video_presigned_url ? (
-                                        <VideoPlayer
-                                            yesDesc={descOn}
-                                            videoUrl={video.video_presigned_url}
-                                            playVid={isPlaying}
-                                            title={video.title}
-                                            descriptionList={descUser}
-                                            parentCallback={handleCallback}
-                                        />
-                                    ) : (
-                                        <VideoPlayer
-                                            yesDesc={descOn}
-                                            videoUrl={video.video_presigned_url}
-                                            playVid={isPlaying}
-                                            title={video.title}
-                                            descriptionList={descUser}
-                                            parentCallback={handleCallback}
-                                        />
-                                        //   <YoutubeVideoPlayer
-                                        //     yesDesc={descOn}
-                                        //     path={ensureVideoUrlFormat(video.video_presigned_url)}
-                                        //     playVid={isPlaying}
-                                        //     title={video.title}
-                                        //     descrip={undefined}
-                                        //     parentCallback={handleCallback}
-                                        //     videoID={ensureVideoId(video.url)}
-                                        //   />
-                                    )}
-                                </>
+                                <VideoPlayer
+                                    yesDesc={descOn}
+                                    presignedUrl={video.video_presigned_url || ""}
+                                    youtubeUrl={video.youtube_url}
+                                    title={video.title}
+                                    descriptionList={descUser}
+                                    parentCallback={handleCallback}
+                                />
                             </Grid>
                             <Grid size={{ xs: 12, md: 4 }} mt={2}>
                                 <MenuOptions
@@ -200,7 +184,7 @@ const VideoPage: React.FC = () => {
                                     videoDescriptions={descUser}
                                     parentCallback={handleViewDescriptions}
                                     time={played}
-                                    youtubeID={video.url}
+                                    youtubeID={video.youtube_url}
                                 />
                                 <Box
                                     sx={{

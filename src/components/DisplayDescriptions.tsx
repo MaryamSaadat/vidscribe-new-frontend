@@ -27,6 +27,20 @@ const DisplayDescriptions: React.FC<DisplayDescriptionsProps> = ({
     parentCallback(playedIndex);
   };
 
+
+const startNum = Number(description.timestamp_start);
+const endNum = Number(description.timestamp_end);
+const hasTimestamp = cIndex !== 0 && Number.isFinite(startNum) && Number.isFinite(endNum);
+const timestampLabel = hasTimestamp
+  ? `${formatTime(startNum)} - ${formatTime(endNum)}`
+  : "—";
+
+const displayText = cIndex === 0
+    ? ""
+    : (Array.isArray(description.text_history)
+        ? description.text_history.join(" ")
+        : String(description.text_history ?? ""));
+
   return (
     <Box
       sx={{
@@ -51,7 +65,7 @@ const DisplayDescriptions: React.FC<DisplayDescriptionsProps> = ({
           Audio Description
         </Typography>
         {/* <Chip
-          label={`${formatTime(parseInt(description.timestamp_start))} - ${formatTime(parseInt(description.timestamp_end))}`}
+          label={timestampLabel}
           size="small"
           sx={{
             backgroundColor: "rgba(255, 255, 255, 0.2)",
@@ -78,7 +92,7 @@ const DisplayDescriptions: React.FC<DisplayDescriptionsProps> = ({
             component="span"
             sx={{ fontWeight: 500, fontSize: "0.875rem" }}
           >
-            {`${formatTime(parseInt(description.timestamp_start))} - ${formatTime(parseInt(description.timestamp_end))}`}
+            {timestampLabel}
           </Typography>
         </Paper>
       </Box>
@@ -89,13 +103,14 @@ const DisplayDescriptions: React.FC<DisplayDescriptionsProps> = ({
           variant="body1"
           mb={2.5}
         >
-          {description.text_history}
+          {displayText}
         </Typography>
 
         <Divider sx={{ mb: 2.5 }} />
 
         <TextToSpeech
-          text={description.text_history}
+          text={displayText}
+          autoPlay={cIndex !== 0}
           parentCallback={handleCallback}
           cIndex={cIndex}
           pIndex={pIndex}

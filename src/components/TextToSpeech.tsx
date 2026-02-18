@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { Box, Stack, Slider, Button, ButtonGroup, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import React, { useState, useEffect, useRef } from "react";
+import { Box, Stack, Slider, Button, ButtonGroup } from "@mui/material";
 import VolumeDown from "@mui/icons-material/VolumeDown";
 import VolumeUp from "@mui/icons-material/VolumeUp";
 import SpeedIcon from "@mui/icons-material/Speed";
 import SlowMotionVideoIcon from "@mui/icons-material/SlowMotionVideo";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import PauseIcon from "@mui/icons-material/Pause";
 import StopIcon from "@mui/icons-material/Stop";
 
 interface TextToSpeechProps {
@@ -13,115 +12,178 @@ interface TextToSpeechProps {
   parentCallback: (playedIndex: number) => void;
   cIndex: number;
   pIndex: number;
+  autoPlay?: boolean;
 }
 
 const TextToSpeech: React.FC<TextToSpeechProps> = ({
   text,
   parentCallback,
   cIndex,
-  pIndex
+  pIndex,
+  autoPlay = true
 }) => {
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [utterance, setUtterance] = useState<SpeechSynthesisUtterance | null>(null);
-  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [pitch, setPitch] = useState<number>(1);
-  const [rate, setRate] = useState<number>(1);
-  const [volume, setVolume] = useState<number>(1);
-
-  const handleVoiceChange = (event: any): void => {
-    const voices = window.speechSynthesis.getVoices();
-    const selectedVoice = voices.find((v) => v.name === event.target.value);
-    setVoice(selectedVoice || null);
-  };
-
-  const handlePlay = (): void => {
-    const synth = window.speechSynthesis;
-
-    if (isPaused) {
-      synth.resume();
-    } else if (utterance) {
-      utterance.voice = voice;
-      utterance.pitch = pitch;
-      utterance.rate = rate;
-      utterance.volume = volume;
-      synth.speak(utterance);
-    }
-
-    setIsPaused(false);
-  };
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [rate, setRate] = useSessionState<number>("tts_rate", 1);
+  const [volume, setVolume] = useSessionState<number>("tts_volume", 1);
+  
+  const synthRef = useRef(window.speechSynthesis);
+  const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const currentIndexRef = useRef<number>(-1);
 
   useEffect(() => {
-    if (pIndex !== cIndex) {
-      const synth = window.speechSynthesis;
-      const voices = synth.getVoices();
+    const synth = synthRef.current;
 
+    console.log(`TextToSpeech - cIndex: ${cIndex}, pIndex: ${pIndex}, isSpeaking: ${isSpeaking}, currentIndexRef: ${currentIndexRef.current}`);
+
+    if (!autoPlay) {
+      console.log("AutoPlay disabled, canceling speech");
+      synth.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
+      currentUtteranceRef.current = null;
+      currentIndexRef.current = -1;
+      return;
+    }
+
+    const shouldStartSpeech = 
+      pIndex !== cIndex && 
+      currentIndexRef.current !== cIndex && 
+      !isSpeaking;
+
+    if (shouldStartSpeech) {
+      console.log(`Starting speech for index ${cIndex}`);
+      
       const textToSpeak = Array.isArray(text) ? text.join(" ") : text;
       const newUtterance = new SpeechSynthesisUtterance(textToSpeak);
-      const googleVoice = voices.find((v) => v.name === "Google US English");
 
+      const voices = synth.getVoices();
+      const googleVoice = voices.find((v) => v.name === "Google US English");
       if (googleVoice) {
         newUtterance.voice = googleVoice;
       }
-      newUtterance.pitch = pitch;
+
+      // Apply current rate and volume settings
       newUtterance.rate = rate;
       newUtterance.volume = volume;
+      newUtterance.pitch = 1;
 
-      if (isPaused) {
-        setIsPaused(false);
-      }
-      synth.speak(newUtterance);
+      setIsSpeaking(true);
+      setIsPaused(false);
+      currentIndexRef.current = cIndex;
+
+      newUtterance.onstart = () => {
+        console.log(`Speech STARTED for index ${cIndex}`);
+      };
 
       newUtterance.onend = () => {
+        console.log(`Speech COMPLETED for index ${cIndex}`);
+        setIsSpeaking(false);
+        setIsPaused(false);
+        currentIndexRef.current = -1;
         parentCallback(cIndex);
       };
 
-      setUtterance(newUtterance);
+      newUtterance.onerror = (event) => {
+        console.error(`Speech ERROR for index ${cIndex}:`, event.error);
+        
+        if (event.error !== 'interrupted') {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          currentIndexRef.current = -1;
+        } else {
+          console.log("Interrupted error - keeping speech state");
+        }
+      };
+
+      synth.speak(newUtterance);
+      currentUtteranceRef.current = newUtterance;
 
       return () => {
-        synth.cancel();
+        if (!autoPlay) {
+          console.log(`Cleanup - canceling speech for index ${cIndex}`);
+          synth.cancel();
+          setIsSpeaking(false);
+          setIsPaused(false);
+          currentIndexRef.current = -1;
+        }
       };
+    } else {
+      console.log(`Skipping speech - already handled`);
     }
-  }, [text, voice, pitch, rate, volume, cIndex, pIndex, isPaused, parentCallback]);
+  }, [text, cIndex, pIndex, autoPlay, parentCallback, rate, volume]);
 
-  const handlePause = (): void => {
-    const synth = window.speechSynthesis;
-    setIsPaused(true);
-    synth.pause();
+  function useSessionState<T>(key: string, defaultValue: T) {
+    const [value, setValue] = React.useState<T>(() => {
+      const saved = sessionStorage.getItem(key);
+      return saved != null ? (JSON.parse(saved) as T) : defaultValue;
+    });
+  
+    React.useEffect(() => {
+      sessionStorage.setItem(key, JSON.stringify(value));
+    }, [key, value]);
+  
+    return [value, setValue] as const;
+  }
+  
+
+  const handlePlay = (): void => {
+    const synth = synthRef.current;
+
+    if (!autoPlay) {
+      console.log("AutoPlay disabled, cannot play");
+      return;
+    }
+
+    // Resume if paused
+    if (isPaused) {
+      console.log("▶️ Resuming speech");
+      synth.resume();
+      setIsPaused(false);
+    } 
+    // Replay current utterance if stopped
+    else if (currentUtteranceRef.current && !isSpeaking) {
+      console.log("▶️ Replaying current description");
+      const utterance = currentUtteranceRef.current;
+      utterance.rate = rate;
+      utterance.volume = volume;
+      
+      setIsSpeaking(true);
+      synth.speak(utterance);
+    }
   };
 
   const handleStop = (): void => {
-    const synth = window.speechSynthesis;
+    console.log("Stop button clicked");
+    const synth = synthRef.current;
     synth.cancel();
+    setIsSpeaking(false);
     setIsPaused(false);
+    currentUtteranceRef.current = null;
+    currentIndexRef.current = -1;
   };
 
-  const handleRateChange = (event: Event, value: number | number[]): void => {
-    setRate(typeof value === 'number' ? value : value[0]);
+  const handleRateChange = (_: Event, value: number | number[]): void => {
+    const newRate = Array.isArray(value) ? value[0] : value;
+    setRate(newRate);
+  
+    if (currentUtteranceRef.current && isSpeaking) {
+      currentUtteranceRef.current.rate = newRate;
+    }
   };
-
-  const handleVolumeChange = (event: Event, value: number | number[]): void => {
-    setVolume(typeof value === 'number' ? value : value[0]);
+  
+  const handleVolumeChange = (_: Event, value: number | number[]): void => {
+    const newVolume = Array.isArray(value) ? value[0] : value;
+    setVolume(newVolume);
+  
+    if (currentUtteranceRef.current && isSpeaking) {
+      currentUtteranceRef.current.volume = newVolume;
+    }
   };
+  
 
   return (
     <Box>
-      {/* <FormControl fullWidth size="small" sx={{ mb: 2.5 }}>
-        <InputLabel id="voice-select-label">Voice</InputLabel>
-        <Select
-          labelId="voice-select-label"
-          value={voice?.name || ""}
-          label="Voice"
-          onChange={handleVoiceChange}
-          sx={{ borderRadius: 2 }}
-        >
-          {window.speechSynthesis.getVoices().map((voice) => (
-            <MenuItem key={voice.name} value={voice.name}>
-              {voice.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl> */}
-
       <Stack
         spacing={4}
         direction="row"
@@ -168,18 +230,19 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({
       >
         <Button
           onClick={handlePlay}
-          startIcon={isPaused ? <PlayArrowIcon /> : <PlayArrowIcon />}
+          disabled={!autoPlay || (!isPaused && isSpeaking)}
+          startIcon={<PlayArrowIcon />}
         >
-          {isPaused ? "Resume Current Description" : "Play Current Description"}
+          {!autoPlay 
+            ? "No Description" 
+            : isPaused 
+            ? "Resume Current Description" 
+            : "Play Current Description"}
         </Button>
-        {/* <Button
-          onClick={handlePause}
-          startIcon={<PauseIcon />}
-        >
-          Pause Current Description
-        </Button> */}
+        
         <Button
           onClick={handleStop}
+          disabled={!autoPlay || (!isSpeaking && !isPaused)}
           startIcon={<StopIcon />}
         >
           Stop Current Description

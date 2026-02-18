@@ -94,6 +94,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
             image={thumbnailImage}
             alt={title}
             onLoad={() => setImageLoaded(true)}
+            onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+              e.currentTarget.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/A_black_image.jpg/640px-A_black_image.jpg';
+              setImageLoaded(true);
+            }}
             sx={{
               position: 'absolute',
               top: 0,
