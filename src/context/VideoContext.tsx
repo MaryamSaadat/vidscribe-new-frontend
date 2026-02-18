@@ -9,15 +9,28 @@ import React, {
 import { GET_VIDEOS } from '../utils/constants';
 import axios from 'axios';
 
-// Define a minimal shape for a video until you have your real one
 type Video = Record<string, unknown>;
+
+type PaginationMeta = {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+};
 
 type VideoContextType = {
   videoList: Video[];
   isLoading: boolean;
   error: string;
+  page: number;
+  setPage: (page: number) => void;
+  paginationMeta: PaginationMeta | null;
   refetchVideos: () => Promise<void>;
 };
+
+const PAGE_SIZE = 40; // Change this to update default page size
 
 const VideoContext = createContext<VideoContextType | undefined>(undefined);
 
@@ -35,54 +48,51 @@ export const VideoProvider: React.FC<Props> = ({ children }) => {
   const [videoList, setVideoList] = useState<Video[]>([]);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [lastFetched, setLastFetched] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
 
-  // Cache duration: 5 minutes
-  const CACHE_DURATION = 5 * 60 * 1000;
-  const apiUrl = GET_VIDEOS;
+  const fetchVideos = useCallback(async (currentPage: number) => {
+    setLoading(true);
+    setError('');
 
-  const fetchVideos = useCallback(
-    async (force = false) => {
-      if (!force && lastFetched && Date.now() - lastFetched < CACHE_DURATION) {
-        return;
-      }
+    try {
+      const response = await axios.get(GET_VIDEOS, {
+        params: {
+          page: currentPage,
+          page_size: PAGE_SIZE,
+        },
+      });
 
-      setLoading(true);
-      setError('');
+      const items = Array.isArray(response?.data?.videos)
+        ? response.data.videos
+        : [];
 
-      try {
-        const response = await axios.get(apiUrl);
-        const items = Array.isArray(response?.data?.videos)
-          ? response.data.videos
-          : [];
+      const parsed = items
+        .map((item) => {
+          try {
+            return typeof item === 'string' ? JSON.parse(item) : item;
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean) as Video[];
 
-        const parsed = items
-          .map((item) => {
-            try {
-              return typeof item === 'string' ? JSON.parse(item) : item;
-            } catch {
-              return null;
-            }
-          })
-          .filter(Boolean) as Video[];
+      setVideoList(parsed);
+      setPaginationMeta(response.data.pagination ?? null);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load videos.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-        setVideoList(parsed);
-        setLastFetched(Date.now());
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load videos.');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [apiUrl, lastFetched]
-  );
-
+  // Re-fetch whenever page changes
   useEffect(() => {
-    void fetchVideos();
-  }, [fetchVideos]);
+    void fetchVideos(page);
+  }, [page, fetchVideos]);
 
-  const refetchVideos = useCallback(() => fetchVideos(true), [fetchVideos]);
+  const refetchVideos = useCallback(() => fetchVideos(page), [fetchVideos, page]);
 
   return (
     <VideoContext.Provider
@@ -90,6 +100,9 @@ export const VideoProvider: React.FC<Props> = ({ children }) => {
         videoList,
         isLoading,
         error,
+        page,
+        setPage,
+        paginationMeta,
         refetchVideos,
       }}
     >
