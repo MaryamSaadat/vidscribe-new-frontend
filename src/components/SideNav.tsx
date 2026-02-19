@@ -708,7 +708,7 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
       <Divider />
 
       {/* Session Control Section */}
-      <Box 
+      {/*<Box 
         sx={{ p: 2 }}
         role="region"
         aria-label="Session control"
@@ -721,7 +721,6 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
           Session Tracking
         </Typography>
 
-        {/* Timer Display */}
         <Box
           sx={{
             bgcolor: 'background.default',
@@ -748,7 +747,6 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
           </Stack>
         </Box>
 
-        {/* Control Buttons */}
         <Stack spacing={1}>
           {!sessionData || sessionData.status === 'stopped' ? (
             <Button
@@ -821,7 +819,7 @@ const ResponsiveDrawer: React.FC<ResponsiveDrawerProps> = ({
             Saving...
           </Typography>
         )}
-      </Box>
+      </Box>}
 
       <Divider />
 

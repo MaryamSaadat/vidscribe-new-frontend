@@ -31,48 +31,88 @@ const EditDescriptions: React.FC = () => {
   };
 
   return (
-    <div>
-      <Box sx={{ display: "flex" }}>
-        <SideNav />
-        <Box
-          component="main"
-          sx={{
+    <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      <SideNav />
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden"
+        }}
+      >
+        <Navbar />
+        
+        {/* Content area - takes remaining space after Navbar */}
+        <Box 
+          sx={{ 
             flexGrow: 1,
             p: 2,
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
           }}
         >
-          <Navbar />
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 6, md: 6 }}>
-              {youtubeID ? (
-                // <YoutubeVideoPlayer
-                //   yesDesc={false}
-                //   path={ensureVideoUrlFormat(video_path)}
-                //   parentCallback={handleCallback}
-                //   descrip={null}
-                //   videoID={ensureVideoId(youtubeID)}
-                // />
-                <></>
-              ) : (
+          <Grid 
+            container 
+            spacing={2} 
+            sx={{ 
+              height: "100%",
+              flexGrow: 1,
+              margin: 0,
+              width: "100%"
+            }}
+          >
+            {/* Video Column */}
+            <Grid 
+              size={{ xs: 12, md: 6 }} 
+              sx={{ 
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden"
+              }}
+            >
+              <Box sx={{ height: "100%", overflow: "hidden" }}>
                 <VideoPlayer
                   yesDesc={false}
-                  videoUrl={videoUrl}
+                  presignedUrl={videoUrl || ""}
+                  youtubeUrl={youtubeID}
                   title={title}
-                  descrip={null}
+                  descriptionList={[]}
                   parentCallback={handleCallback}
                 />
-              )}
+              </Box>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Box sx={{ height: "80vh", overflowY: "auto" }}>
-              <Scene id={video_id} />
+
+            {/* Scene Column - ONLY this scrolls */}
+            <Grid 
+              size={{ xs: 12, md: 6 }} 
+              sx={{ 
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden"
+              }}
+            >
+              <Box 
+                sx={{ 
+                  height: "100%",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  pr: 1  // Padding for scrollbar
+                }}
+              >
+                <Scene id={video_id} />
               </Box>
             </Grid>
           </Grid>
         </Box>
       </Box>
-    </div>
+    </Box>
   );
 };
 
