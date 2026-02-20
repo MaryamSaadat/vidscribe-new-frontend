@@ -8,6 +8,7 @@ import type { ElementType } from 'react';
 import maryamImage from './images/maryam.jpeg';
 import sinaImage from './images/sina.jpeg';
 import samImage from './images/sam.jpg';
+import RushitImage from './images/Rushit.jpg';
 
 // Logo path
 export const logo = './viLogo.png' as const;
@@ -95,6 +96,13 @@ export const people: readonly Person[] = [
     image: samImage,
     name: 'Samuel Martin',
     info: 'Arizona State University',
+  },
+  {
+    image: RushitImage,
+    name: 'Rushit Kothari',
+    info: 'Arizona State University',
+    site:'https://rush3103.github.io/Rushit-Portfolio/Rushit-Portfolio.html',
+    zoom: false,
   },
   {
     image:
