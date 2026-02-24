@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Box, Stack, Typography, Grid, Button, Fade, Collapse } from "@mui/material";
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { Box, Stack, Typography, Button } from "@mui/material";
+import { useNavigate, useLocation } from "react-router-dom";
 import AskAI from "./AskAI";
 import AlertBar from "./AlertBar";
 import Cookies from "js-cookie";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import EditIcon from "@mui/icons-material/Edit";
 import ShareIcon from "@mui/icons-material/Share";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { useAuthenticator } from '@aws-amplify/ui-react';
+import { useAuthenticator } from "@aws-amplify/ui-react";
 
 interface MenuOptionsProps {
   video_id: number | undefined;
@@ -35,15 +34,30 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
 }) => {
   const [alerttext, setAlerttext] = useState<string>("");
   const [showAlert, setShowAlert] = useState<boolean>(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+
+  // Keep this if you still use cookies elsewhere, but don't rely on it for UI gating
+  const token = Cookies.get("jwtToken");
+
   const [turnOnOff, setturnOnOff] = useState<"off" | "on">("off");
   const [descOn, setDescOn] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const navigate = useNavigate();
-  const { user } = useAuthenticator();
-  const token = Cookies.get("jwtToken");
 
-  // console.log("MenuOptions video ids and paths", video_id, videoUrl, youtubeID, title);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ Amplify user may be undefined on public pages
+  const { user } = useAuthenticator((ctx) => [ctx.user]);
+  const isAuthed = !!user;
+
+  // ✅ Safe username (never crashes)
+  const username = user?.signInDetails?.loginId ?? null; // or "Guest"
+
+  const showLoginAlertAndRedirect = (msg: string) => {
+    setAlerttext(msg);
+    setShowAlert(true);
+    // Redirect to login and remember where user came from
+    navigate("/login", { replace: false, state: { from: location } });
+  };
 
   const handleShareButtonClick = (): void => {
     const url = window.location.href;
@@ -54,37 +68,37 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
   };
 
   const handleAddDescriptions = (): void => {
-    if (!isLoggedIn) {
-      setShowAlert(true);
-      setAlerttext("You need to have an account to add descriptions");
-    } else {
-      navigate("/AddDescriptions", {
-        state: { video_id: video_id, video_path: video_path, youtubeID: youtubeID },
-      });
+    if (!isAuthed) {
+      showLoginAlertAndRedirect("You need to login to add descriptions.");
+      return;
     }
+    navigate("/AddDescriptions", {
+      state: { video_id: video_id, video_path: video_path, youtubeID: youtubeID },
+    });
   };
 
   const handleEditDescriptions = (): void => {
-    // if (!isLoggedIn) {
-    //   setShowAlert(true);
-    //   setAlerttext("You need to have an account to edit descriptions");
-    // } else {
+    if (!isAuthed) {
+      showLoginAlertAndRedirect("You need to login to edit descriptions.");
+      return;
+    }
     navigate("/EditDescriptions", {
       state: { video_id: video_id, videoUrl: videoUrl, youtubeID: youtubeID, title: title },
     });
-    // }
   };
 
   const handleViewDescriptions = (): void => {
     setturnOnOff((prev) => (prev === "off" ? "on" : "off"));
     setDescOn((prev) => !prev);
-    parentCallback(descOn);
+    // NOTE: parentCallback should receive the *next* value, not the old one
+    parentCallback(!descOn);
   };
 
+  // If you still want cookie-based state for other things, you can keep it,
+  // but it’s not required for this component anymore.
   useEffect(() => {
-    if (!token) {
-      setIsLoggedIn(false);
-    }
+    // no-op, kept only if you want to debug token presence
+    void token;
   }, [token]);
 
   const handleCloseAlertCallback = (): void => {
@@ -97,14 +111,11 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
         backgroundColor: "white",
         borderRadius: 2,
         boxShadow: 3,
-        overflow: "hidden"
+        overflow: "hidden",
       }}
     >
       {showAlert && (
-        <AlertBar
-          alertText={alerttext}
-          parentCallback={handleCloseAlertCallback}
-        />
+        <AlertBar alertText={alerttext} parentCallback={handleCloseAlertCallback} />
       )}
 
       {/* Header */}
@@ -115,14 +126,18 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
           color: "white",
         }}
       >
-        <Typography variant="h6" fontWeight={600} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography
+          variant="h6"
+          fontWeight={600}
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
           Video Options
         </Typography>
       </Box>
 
       {/* Content */}
       <Stack spacing={1.5} sx={{ p: 2.5 }}>
-        {/* Toggle Descriptions */}
+        {/* Toggle Descriptions (public) */}
         <Button
           variant="contained"
           fullWidth
@@ -150,16 +165,22 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
           Turn {turnOnOff} descriptions
         </Button>
 
+        {/* Ask AI (public, but pass safe username; you can also gate it if needed) */}
+        <AskAI
+          videoID={video_id}
+          timeStamp={time}
+          videoUrl={videoUrl}
+          videoAD={videoDescriptions}
+          username={username ?? "Guest"}
+        />
 
-        {/* Ask AI */}
-        <AskAI videoID={video_id} timeStamp={time} videoUrl={videoUrl} videoAD={videoDescriptions} username={user.signInDetails?.loginId} />
-
-        {/* Edit Descriptions */}
+        {/* Edit Descriptions (protected) */}
         <Button
           variant="outlined"
           fullWidth
           startIcon={<EditIcon />}
           onClick={handleEditDescriptions}
+          disabled={!isAuthed}
           sx={{
             py: 1.5,
             px: 2.5,
@@ -171,10 +192,22 @@ const MenuOptions: React.FC<MenuOptionsProps> = ({
           }}
           aria-label="If you want to edit the descriptions, you can do so by clicking on this button"
         >
-          Edit descriptions
+          {isAuthed ? "Edit descriptions" : "Login to edit descriptions"}
         </Button>
 
-        {/* Share Video */}
+        {/* (Optional) Add descriptions button if you use it */}
+        {/* <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<AddCircleOutlineIcon />}
+          onClick={handleAddDescriptions}
+          disabled={!isAuthed}
+          sx={{ py: 1.5, px: 2.5, textTransform: "none" }}
+        >
+          {isAuthed ? "Add descriptions" : "Login to add descriptions"}
+        </Button> */}
+
+        {/* Share Video (public) */}
         <Button
           variant="outlined"
           fullWidth
