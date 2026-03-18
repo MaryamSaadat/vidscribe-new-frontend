@@ -71,6 +71,7 @@ function getText(d: any): string {
   if (Array.isArray(d?.text_history) && d.text_history.length > 0) {
     return String(d.text_history[d.text_history.length - 1] ?? "");
   }
+  if (typeof d?.text === "string") return d.text;
   if (typeof d?.description === "string") return d.description;
   if (typeof d?.modified_descriptions === "string") return d.modified_descriptions;
   return "";
@@ -179,10 +180,10 @@ const Scene: React.FC<SceneProps> = ({ id }) => {
     try {
       setIsSaving(true);
       await createDescription({
-        video_id: id,
-        description: editedDescription,
-        time_stamp_start: parseInt(editedStartTime, 10),
-        time_stamp_end: parseInt(editedEndTime, 10),
+        video_id: Number(id),
+        text: editedDescription,
+        timestamp_start: parseInt(editedStartTime, 10),
+        timestamp_end: parseInt(editedEndTime, 10),
       });
 
       setSuccessMessage("Description added successfully!");
@@ -216,9 +217,9 @@ const Scene: React.FC<SceneProps> = ({ id }) => {
       setIsSaving(true);
       await updateDescription({
         id: selectedDescriptionId,
-        modified_descriptions: editedDescription,
-        time_stamp_start: parseInt(editedStartTime, 10),
-        time_stamp_end: parseInt(editedEndTime, 10),
+        text: editedDescription,
+        // time_stamp_start: parseInt(editedStartTime, 10),
+        // time_stamp_end: parseInt(editedEndTime, 10),
       });
 
       setSuccessMessage("Description updated successfully!");

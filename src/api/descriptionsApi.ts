@@ -1,5 +1,5 @@
 // api/descriptionsApi.ts
-import axios, { AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import Cookies from "js-cookie";
 import { GET_VIDEO_DESCRIPTIONS } from "../utils/constants";
 
@@ -9,185 +9,228 @@ import { GET_VIDEO_DESCRIPTIONS } from "../utils/constants";
 
 export interface Description {
   id: number;
-  text_history: string[];
-  timestamp_end: number;
-  timestamp_start: number;
-  username_history: string[];
   video_id: number;
+
+  // backend fields
+  text_history: string[];
+  username_history: string[];
+
+  timestamp_start: number;
+  timestamp_end: number;
 }
 
 export interface GetDescriptionsResponse {
   descriptions: Description[];
 }
 
-export interface UpdateDescriptionPayload {
-  id: number;
-  modified_descriptions: string;
-  time_stamp_start: number;
-  time_stamp_end: number;
-  username: string | undefined;
-}
-
 export interface CreateDescriptionPayload {
   video_id: string | number;
-  text_history: string; // your current type says string; backend might want string or array depending on model
-  time_stamp_start: number;
-  time_stamp_end: number;
-  username_history: string | undefined;
+  text: string;
+  timestamp_start: number;
+  timestamp_end: number;
+  username?: string; // ✅ required by backend; we’ll fill if missing
+}
+
+export interface UpdateDescriptionPayload {
+  id: number;
+  text: string;
+  username?: string; // ✅ likely required too
+  timestamp_start?: number;
+  timestamp_end?: number;
 }
 
 export interface ApiResponse {
-  message: string;
+  message?: string;
+  error?: string;
+  [key: string]: any;
 }
 
 // ============================================
 // API CONFIGURATION
 // ============================================
 
-// You currently use GET_VIDEO_DESCRIPTIONS as a full URL.
-// In your logs, it appears to be something like:
-// https://.../default/VidScribeDescriptions
-//
-// For PUT/POST/DELETE we need the API ROOT (https://.../default) and then add /VidScribeDescriptions ourselves.
-//
-// This helper derives API_ROOT safely if GET_VIDEO_DESCRIPTIONS ends with /VidScribeDescriptions
 const deriveApiRoot = (full: string): string => {
-  // Remove trailing slashes
   const cleaned = (full || "").replace(/\/+$/, "");
-  // Remove the resource suffix if present
   const suffix = "/VidScribeDescriptions";
-  if (cleaned.endsWith(suffix)) {
-    return cleaned.slice(0, -suffix.length);
-  }
-  // If constants already point to root, keep it
-  return cleaned;
+  return cleaned.endsWith(suffix) ? cleaned.slice(0, -suffix.length) : cleaned;
 };
 
 const API_ROOT = deriveApiRoot(GET_VIDEO_DESCRIPTIONS);
 const DESCRIPTIONS_RESOURCE = "/VidScribeDescriptions";
 
-// Get JWT token from cookies
 const getAuthToken = (): string | undefined => Cookies.get("jwt");
 
-// Create axios instance with default config
+// ✅ IMPORTANT: define how to get username in your app
+// Replace this with whatever your app uses (cookie/localStorage/context).
+const getUsername = (): string => {
+  return (
+    Cookies.get("username") ||
+    localStorage.getItem("username") ||
+    "anonymous"
+  );
+};
+
 const apiClient = axios.create({
   baseURL: API_ROOT,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
+
+apiClient.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers = config.headers ?? {};
+    (config.headers as any).Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ============================================
+// ERROR HANDLING
+// ============================================
+
+function extractServerMessage(err: unknown): string {
+  const e = err as AxiosError<any>;
+  const data = e?.response?.data;
+
+  if (Array.isArray(data) && data[0]?.msg) return String(data[0].msg); // pydantic list
+  if (typeof data === "string" && data.trim()) return data;
+  if (data?.message) return String(data.message);
+  if (data?.error) return String(data.error);
+
+  if (data?.body) {
+    try {
+      const parsed = typeof data.body === "string" ? JSON.parse(data.body) : data.body;
+      if (Array.isArray(parsed) && parsed[0]?.msg) return String(parsed[0].msg);
+      if (parsed?.message) return String(parsed.message);
+      if (parsed?.error) return String(parsed.error);
+      return JSON.stringify(parsed);
+    } catch {
+      return String(data.body);
+    }
+  }
+
+  return (e?.message as string) || "Request failed. Please try again.";
+}
+
+function debugAxiosError(context: string, err: unknown) {
+  const e = err as AxiosError<any>;
+  console.error(`${context} (DETAILS)`, {
+    status: e?.response?.status,
+    responseData: e?.response?.data,
+    url: e?.config?.url,
+    method: e?.config?.method,
+    sent: e?.config?.data,
+    params: e?.config?.params,
+  });
+}
 
 // ============================================
 // API FUNCTIONS
 // ============================================
 
-/**
- * Fetch all descriptions for a specific video
- */
-export const fetchVideoDescriptions = async (
-  videoId: string | number
-): Promise<Description[]> => {
+export const fetchVideoDescriptions = async (videoId: string | number): Promise<Description[]> => {
   try {
-    // This endpoint appears correct for your backend:
-    // GET /VidScribeDescriptions?video_id=...
-    const response: AxiosResponse<GetDescriptionsResponse> = await axios.get(
-      `${API_ROOT}${DESCRIPTIONS_RESOURCE}`,
-      { params: { video_id: videoId } }
-    );
-    return response.data.descriptions;
-  } catch (error) {
-    console.error("Error fetching video descriptions:", error);
-    throw new Error("Failed to load descriptions. Please try again.");
-  }
-};
-
-/**
- * Create a new description for a video
- */
-export const createDescription = async (
-  payload: Omit<CreateDescriptionPayload, "jwt">
-): Promise<ApiResponse> => {
-  try {
-    const token = getAuthToken();
-
-    // IMPORTANT:
-    // Your backend POST uses DescriptionCreate(**body).
-    // If your Pydantic model expects:
-    // - text_history (string or list), keep as below
-    // - OR text, change text_history -> text
-    const body = {
-      video_id: payload.video_id,
-      text_history: payload.text_history, // <-- change to `text` if backend expects text, not text_history
-      timestamp_start: payload.time_stamp_start,
-      timestamp_end: payload.time_stamp_end,
-      jwt: token,
-    };
-
-    const response: AxiosResponse<ApiResponse> = await apiClient.post(
+    const response: AxiosResponse<GetDescriptionsResponse> = await apiClient.get(
       `${DESCRIPTIONS_RESOURCE}`,
-      body
+      { params: { video_id: String(videoId) } }
     );
 
-    return response.data;
+    return Array.isArray(response.data?.descriptions) ? response.data.descriptions : [];
   } catch (error) {
-    console.error("Error creating description:", error);
-    throw new Error("Failed to add description. Please try again.");
+    debugAxiosError("Error fetching video descriptions", error);
+    throw new Error(extractServerMessage(error));
   }
 };
 
-/**
- * Update an existing description (EDIT)
- *
- * Backend expects:
- * PUT /VidScribeDescriptions/{id}
- * Body must include field: text
- */
-export const updateDescription = async (
-  payload: Omit<UpdateDescriptionPayload, "jwt">
-): Promise<ApiResponse> => {
+export const createDescription = async (payload: CreateDescriptionPayload): Promise<ApiResponse> => {
   try {
     const token = getAuthToken();
+    const username = payload.username || getUsername(); // ✅ required by backend
 
-    // This is the key fix:
-    // - correct URL includes ID
-    // - correct body field is `text` (backend checks description_fields.text)
-    const body = {
-      text: payload.modified_descriptions,
-      jwt: token,
+    const clean = {
+      video_id: Number(payload.video_id),
+      text: String(payload.text ?? ""),
+      timestamp_start: Number(payload.timestamp_start),
+      timestamp_end: Number(payload.timestamp_end),
+      username, // ✅ add it
+      ...(token ? { jwt: token } : {}), // keep if backend checks jwt in body
     };
 
-    const response: AxiosResponse<ApiResponse> = await apiClient.put(
-      `${DESCRIPTIONS_RESOURCE}/${payload.id}`,
-      body
+    const res: AxiosResponse<ApiResponse> = await apiClient.post(
+      `${DESCRIPTIONS_RESOURCE}`,
+      clean
     );
 
-    return response.data;
+    return res.data;
   } catch (error) {
-    console.error("Error updating description:", error);
-    throw new Error("Failed to update description. Please try again.");
+    debugAxiosError("Error creating description", error);
+    throw new Error(extractServerMessage(error));
   }
 };
 
-/**
- * Delete a description by ID
- */
-export const deleteDescription = async (descriptionId: number): Promise<void> => {
-  try {
-    const token = getAuthToken();
+export const updateDescription = async (payload: UpdateDescriptionPayload): Promise<ApiResponse> => {
+  const token = getAuthToken();
+  const username = payload.username || getUsername(); // ✅ likely required
 
-    await apiClient.delete(`${DESCRIPTIONS_RESOURCE}/${descriptionId}`, {
-      // Only include body if your backend verify_user expects it.
-      // If delete is public, you can remove `data`.
-      data: { jwt: token },
+  const clean: any = {
+    id: Number(payload.id),
+    text: String(payload.text ?? ""),
+    username, // ✅ add it
+    ...(token ? { jwt: token } : {}),
+  };
+
+  if (payload.timestamp_start !== undefined) clean.timestamp_start = Number(payload.timestamp_start);
+  if (payload.timestamp_end !== undefined) clean.timestamp_end = Number(payload.timestamp_end);
+
+  try {
+    // Try PUT /resource with id in body (common in lambda proxy)
+    const res: AxiosResponse<ApiResponse> = await apiClient.put(`${DESCRIPTIONS_RESOURCE}`, clean);
+    return res.data;
+  } catch (error1) {
+    debugAxiosError("Update attempt 1 failed (PUT /resource)", error1);
+
+    try {
+      // Fallback PUT /resource/{id}
+      const res2: AxiosResponse<ApiResponse> = await apiClient.put(
+        `${DESCRIPTIONS_RESOURCE}/${clean.id}`,
+        clean
+      );
+      return res2.data;
+    } catch (error2) {
+      debugAxiosError("Update attempt 2 failed (PUT /resource/{id})", error2);
+      throw new Error(extractServerMessage(error2));
+    }
+  }
+};
+
+export const deleteDescription = async (descriptionId: number): Promise<void> => {
+  const token = getAuthToken();
+  const username = getUsername(); // ✅ if backend requires username for auditing
+  const id = Number(descriptionId);
+
+  try {
+    // Attempt 1: DELETE /resource?id=123 (common)
+    await apiClient.delete(`${DESCRIPTIONS_RESOURCE}`, {
+      params: { id },
+      ...(token ? { data: { jwt: token, username } } : { data: { username } }),
     });
-  } catch (error) {
-    console.error("Error deleting description:", error);
-    throw new Error("Failed to delete description. Please try again.");
+  } catch (error1) {
+    debugAxiosError("Delete attempt 1 failed (DELETE /resource?id=)", error1);
+
+    try {
+      // Fallback DELETE /resource/123
+      await apiClient.delete(`${DESCRIPTIONS_RESOURCE}/${id}`, {
+        ...(token ? { data: { jwt: token, username } } : { data: { username } }),
+      });
+    } catch (error2) {
+      debugAxiosError("Delete attempt 2 failed (DELETE /resource/{id})", error2);
+      throw new Error(extractServerMessage(error2));
+    }
   }
 };
 
 // ============================================
-// UTILITY FUNCTIONS
+// UTILITIES
 // ============================================
 
 export const formatTime = (seconds: number): string => {
@@ -199,8 +242,8 @@ export const formatTime = (seconds: number): string => {
 export const timeToSeconds = (timeStr: string): number => {
   const parts = timeStr.split(":");
   if (parts.length !== 2) return 0;
-  const mins = parseInt(parts[0]) || 0;
-  const secs = parseInt(parts[1]) || 0;
+  const mins = parseInt(parts[0], 10) || 0;
+  const secs = parseInt(parts[1], 10) || 0;
   return mins * 60 + secs;
 };
 
@@ -208,17 +251,14 @@ export const validateTimestamps = (
   startTime: string,
   endTime: string
 ): { isValid: boolean; error?: string } => {
-  const startSeconds = parseInt(startTime);
-  const endSeconds = parseInt(endTime);
+  const startSeconds = parseInt(startTime, 10);
+  const endSeconds = parseInt(endTime, 10);
 
   if (isNaN(startSeconds) || isNaN(endSeconds)) {
     return { isValid: false, error: "Please enter valid timestamps." };
   }
   if (endSeconds <= startSeconds) {
-    return {
-      isValid: false,
-      error: "End timestamp must be greater than start timestamp.",
-    };
+    return { isValid: false, error: "End timestamp must be greater than start timestamp." };
   }
   if (startSeconds < 0 || endSeconds < 0) {
     return { isValid: false, error: "Timestamps cannot be negative." };
@@ -234,10 +274,7 @@ export const validateDescription = (
     return { isValid: false, error: "Description cannot be empty." };
   }
   if (description.trim().length < 10) {
-    return {
-      isValid: false,
-      error: "Description must be at least 10 characters long.",
-    };
+    return { isValid: false, error: "Description must be at least 10 characters long." };
   }
   return { isValid: true };
 };
