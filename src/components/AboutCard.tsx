@@ -18,6 +18,7 @@ interface MediaCardProps {
   site?: string;
   zoom?: boolean;
   email?: string;
+  backgroundPosition?: string;
 }
 
 const MediaCard: React.FC<MediaCardProps> = ({ 
@@ -26,7 +27,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
   info, 
   site, 
   zoom = false,
-  email 
+  email,
+  backgroundPosition = '50% 0%',
 }) => {
   const theme = useTheme();
 
@@ -67,8 +69,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
           sx={{
             height: '100%',
             backgroundImage: `url(${image})`,
-            backgroundSize: zoom ? '160%' : 'cover',
-            backgroundPosition: zoom ? '50% 0%' : 'center',
+            backgroundSize: 'cover',
+            backgroundPosition: zoom ? backgroundPosition : 'center',
             backgroundRepeat: 'no-repeat',
             transition: 'transform 0.3s ease',
             '&:hover': {
@@ -116,6 +118,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
           {info}
         </Typography>
 
+        <Box sx={{ minHeight: 30, mt: 0.5 }}>
         {site && (
               <IconButton
                 onClick={handleNameClick}
@@ -134,6 +137,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
                 <WebsiteIcon fontSize="small" />
               </IconButton>
             )}
+        </Box>
       </CardContent>
     </Card>
   );

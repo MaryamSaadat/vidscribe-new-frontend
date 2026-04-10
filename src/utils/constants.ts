@@ -6,7 +6,7 @@ import PollIcon from '@mui/icons-material/Poll';
 import type { ElementType } from 'react';
 
 import maryamImage from './images/maryam.jpeg';
-import sinaImage from './images/sina.jpeg';
+import sinaImage from './images/Sina.jpg';
 import samImage from './images/sam.jpg';
 import RushitImage from './images/Rushit.jpg';
 
@@ -59,6 +59,7 @@ export type Person = {
   readonly zoom?: boolean;
   readonly email?: string;
   readonly site?: string;
+  readonly backgroundPosition?: string;
 };
 
 export const contributors = [
@@ -91,6 +92,7 @@ export const people: readonly Person[] = [
     info: 'Saarland University',
     site:'https://www.sina-elahimanesh.com/',
     zoom: true,
+    backgroundPosition: '55% 20%',
   },
     {
     image: samImage,
@@ -111,7 +113,8 @@ export const people: readonly Person[] = [
     info: 'Arizona State University',
     email: 'hasti.seifi@asu.edu',
     site: 'https://hastiseifi.com/',
-    zoom: false,
+    zoom: true,
+    backgroundPosition: '50% 19%',
   },
   {
     image: 'https://pooyanfazli.com/images/PooyanFazli.jpg',

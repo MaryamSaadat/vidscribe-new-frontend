@@ -156,6 +156,7 @@ const AboutPage: React.FC = () => {
                                         email={item.email}
                                         site={item.site}
                                         zoom={item.zoom}
+                                        backgroundPosition={item.backgroundPosition}
                                     />
                                 </Box>
                             ))}
