@@ -8,4 +8,10 @@ export const auth = defineAuth({
   loginWith: {
     email: true,
   },
+  userAttributes: {
+    "custom:vision_status": {
+      dataType: "String",
+      mutable: true,
+    },
+  },
 });
