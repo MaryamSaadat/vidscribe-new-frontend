@@ -36,10 +36,10 @@ const timestampLabel = hasTimestamp
   : "—";
 
 const displayText = cIndex === 0
-    ? ""
-    : (Array.isArray(description.text_history)
-        ? description.text_history.join(" ")
-        : String(description.text_history ?? ""));
+  ? ""
+  : (Array.isArray(description.text_history) && description.text_history.length > 0
+      ? description.text_history[description.text_history.length - 1]
+      : String(description.text_history ?? ""));
 
   return (
     <Box
